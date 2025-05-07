@@ -17,7 +17,6 @@ The GemCo CAM states:
   1. TDC (top dead center). When the press is between approx. -5°/+5° of the true top dead center, this GemCo CAM reads true
   2. Down stroke. When the press is between approx 5°-170° (just after TDC and just before bottom dead center)
   3. TDC Stop 1. Triggered when the press is at approximately -20° from TDC. This is the first indicator that we are getting close to TDC
-  4. TDC Stop 2. Triggered when press is at approx -10° from TDC. This is the second, backup indicator that we are getting close to TDC
 
 The Safety Features:
 - these features are checked via the clearcore code:
@@ -41,6 +40,10 @@ The Modes:
     - must be armed by pressing CONTINUOUS_ARM_BUTTON on panel
     - once armed and at the TDC, pressing palm buttons will start it going continuously
     - stop continuous cycle by hitting the TOP_STOP_BUTTON on the front of the press. It will stop once it reaches TDC.
+
+  Additional modes:
+  - Enable light curtains
+  - Enable use of a servo indexer
 */
 
 
@@ -56,7 +59,7 @@ The Modes:
 
 /*************************************** DEFINE PINS ********************************************/
 // MAIN BOARD
-#define MOTOR ConnectorIO0 // contactor to turn on motor
+#define MOTOR_FW_CONTACTOR ConnectorIO0 // contactor to turn on motor
 #define CLUTCH ConnectorIO1 // engage clutch
 #define OIL_PUMP ConnectorIO2 //send oil
 #define MOTOR_ON_BUTTON ConnectorIO3 
@@ -114,6 +117,7 @@ The Modes:
 // EXPANSION BOARD F (OUTPUTS)
 #define OIL_PUMP_LIGHT CCIOF0
 #define COUNTER CCIOF1 // incremement counter
+#define MOTOR_REV_CONTACTOR CCIOF2 // contactor for the motor that sends it in reverse
 
 /******************************INITIALIZE BOOLS + SOME FUNCTION PROTOTYPES*********************************/
 // Initialize button state and press time - volatile must be used for Arduino Interrupts
@@ -135,12 +139,12 @@ volatile long lastButton4PressTime = 0;
 unsigned long debounceDelay = 50;  // 50ms debounce period
 
 // Initialize Interrupt Service Routines
-void button1ISR();
-void button2ISR();
-void button3ISR();
-void button4ISR();
-void StopISR();
-void LightCurtainRoutine();
+// void button1ISR();
+// void button2ISR();
+// void button3ISR();
+// void button4ISR();
+// void StopISR();
+// void LightCurtainRoutine();
 
 // GemCo renaming
 // bool TDC = false;
@@ -151,8 +155,9 @@ void LightCurtainRoutine();
 bool ssStartedTDC = false;
 bool motorOn = false; // bool for turning on motor
 bool continuousModeArmed = false;  // Tracks whether continuous mode is armed
-bool TopStopButtonPressed = false; // Tracks if the top stop button is pressed
+bool stopAtTop = false; // Tracks if the top stop button is pressed
 
+int numStrokes = 0; //number of times press has struck down (indexer gemco trigger)
 
 void setup() {
 
@@ -160,7 +165,7 @@ void setup() {
   
   /**************************DEFINE INPUTS AND OUTPUTS******************************/
   /*-----------------------------main board----------------------------*/
-  MOTOR.Mode(Connector::OUTPUT_DIGITAL);
+  MOTOR_FW_CONTACTOR.Mode(Connector::OUTPUT_DIGITAL);
   CLUTCH.Mode(Connector::OUTPUT_DIGITAL);
   OIL_PUMP.Mode(Connector::OUTPUT_DIGITAL);
   MOTOR_ON_BUTTON.Mode(Connector::INPUT_DIGITAL);
@@ -170,7 +175,6 @@ void setup() {
   PALM_BUTTON_4.Mode(Connector::INPUT_DIGITAL);
   MOTOR_OFF_BUTTON.Mode(Connector::INPUT_DIGITAL);
   LIGHT_CURTAIN.Mode(Connector::INPUT_DIGITAL);
-
 
   /*--------------------------- extender boards A-F --------------------------*/
   CcioPort.Mode(Connector::CCIO); //For CCIIO-8 (extender boards)
@@ -205,36 +209,39 @@ void setup() {
   for (int pin = CLEARCORE_PIN_CCIOF0; pin <= CLEARCORE_PIN_CCIOF7; pin++) {
       pinMode(pin, OUTPUT);
   }
+
+  Serial.println("done initializing in setup");
+
   // if you need more extender boards, simply copy the code above and change it to C or D, etc
 
   /***************************** SETUP SERVO MOTOR ******************************************/ 
-  MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
-  SERVO.HlfbMode(MotorDriver::HLFB_MODE_HAS_BIPOLAR_PWM);
-  SERVO.HlfbCarrier(MotorDriver::HLFB_CARRIER_482_HZ);
-  SERVO.VelMax(INT32_MAX); // set max velocity
-  SERVO.AccelMax(INT32_MAX); // setup max accel
+  // MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
+  // SERVO.HlfbMode(MotorDriver::HLFB_MODE_HAS_BIPOLAR_PWM);
+  // SERVO.HlfbCarrier(MotorDriver::HLFB_CARRIER_482_HZ);
+  // SERVO.VelMax(INT32_MAX); // set max velocity
+  // SERVO.AccelMax(INT32_MAX); // setup max accel
   
-  // wait five seconds for a port to open before starting motor stuff?
-  uint32_t timeout = 5000;
-  uint32_t startTime = millis();
-  while(!Serial && millis() - startTime < timeout) {
-    continue;
-  }
+  // // wait five seconds for a port to open before starting motor stuff?
+  // uint32_t timeout = 5000;
+  // uint32_t startTime = millis();
+  // while(!Serial && millis() - startTime < timeout) {
+  //   continue;
+  // }
 
-  SERVO.EnableRequest(true);
-  Serial.println("Motor Enabled");
+  // SERVO.EnableRequest(true);
+  // Serial.println("Motor Enabled");
 
-  //waits for HLFB to assert (waits for homing to complete if applicable)
-  Serial.println("Waiting for HLFB...");
-  timeout = 5000; // 5 second timeout
-  startTime = millis();
-  while (SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
-      if (millis() - startTime > timeout) {
-          Serial.println("Timeout waiting for HLFB. Motor may not be connected.");
-          break;
-      }
-  }
-  Serial.println("Motor Ready");
+  // //waits for HLFB to assert (waits for homing to complete if applicable)
+  // Serial.println("Waiting for HLFB...");
+  // timeout = 5000; // 5 second timeout
+  // startTime = millis();
+  // while (SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
+  //     if (millis() - startTime > timeout) {
+  //         Serial.println("Timeout waiting for HLFB. Motor may not be connected.");
+  //         break;
+  //     }
+  // }
+  // Serial.println("Motor Ready");
   
   /************************************ATTACH INTERRUPTS**************************************/
   /*How to Use Interrupts: 
@@ -255,13 +262,14 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(9), button3ISR, RISING);  // PALM_BUTTON_3 interrupt
   attachInterrupt(digitalPinToInterrupt(10), button4ISR, RISING);  // PALM_BUTTON_4 interrupt
   attachInterrupt(digitalPinToInterrupt(11), StopISR, RISING); //MOTOR_OFF_BUTTON interrupt
-  attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, HIGH); //LIGHT CURTAIN, high instead of rising bc it needs to trigger ANYTIME something is detected, not just the first time 
+  attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, LOW); //LIGHT CURTAIN, high instead of rising bc it needs to trigger ANYTIME something is detected, not just the first time 
 
+  Serial.println("done attaching interrupts");
 
   /***********************************initialize stuff**********************************/
   // Initializes all lights to start off 
   digitalWrite(MOTOR_ON_LIGHT, false);
-  digitalWrite(MOTOR_OFF_LIGHT, false); 
+  digitalWrite(MOTOR_OFF_LIGHT, true);
   digitalWrite(TDC_LIGHT, false);
   digitalWrite(DOWNSTROKE_LIGHT, false);
   digitalWrite(TDC_STOP_LIGHT, false);
@@ -270,11 +278,16 @@ void setup() {
   digitalWrite(LIGHT_CURTAIN_ENABLED_LIGHT, false);
 
   //initialize motor and clutch to off/disengaged
-  MOTOR.State(false);
+  MOTOR_FW_CONTACTOR.State(false);
+  digitalWrite(MOTOR_REV_CONTACTOR, false);
   CLUTCH.State(false); 
 
   // Initialize local mode flags to be false
   TurnOffSS();
   TurnOffCont();
+
+  // Turn on oil!
+  OIL_PUMP.State(true); //turn on oil pump for ever!!!
+  digitalWrite(OIL_PUMP_LIGHT, true);
 }
 
