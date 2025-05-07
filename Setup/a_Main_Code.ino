@@ -9,24 +9,26 @@ void Perform_CONTINUOUS();
 
 void loop() {
 
-  /**************************************UPDATE GEMCO AND BUTTON VALUES, all are read-only variables********************************************/
+  MoveIndexer(); //update indexer position
+
+  /******************* UPDATE GEMCO AND BUTTON VALUES, all are read-only variables ********************/
   //GEMCO POSITIONS 
   // TDC = digitalRead(TDC);
   // downStroke = digitalRead(DOWNSTROKE);
   // TDC_STOP = digitalRead(GemCo3);
   // TDC_Stop2 = digitalRead(GemCo4); 
 
-  //PALM BUTTONS - todo is this even helpful?
+  //PALM BUTTONS - TODO test with this commented outs
   button1Pressed = PALM_BUTTON_1.State();
   button2Pressed = PALM_BUTTON_2.State();
 
-  /************************************UPDATE LIGHTS********************************************/
+  /************************************ UPDATE LIGHTS ********************************************/
   UpdateGemCoLight(TDC_LIGHT, TDC);                //update light based on GemCo1 (TDC) state
   UpdateGemCoLight(DOWNSTROKE_LIGHT, DOWNSTROKE); //update light based on GemCo2 (downstroke) state
   UpdateGemCoLight(TDC_STOP_LIGHT, TDC_STOP); //update light based on GemCo3 (TDC stop) state
+  // UpdateGemCoLight(CLEAR, ); // GemCo for indexer being able to rotate safely
 
-
-  /**************************************UPDATE MOTOR STATE*************************************/
+  /************************************** UPDATE MOTOR STATE *************************************/
   // If MOTOR_ON_BUTTON button is pressed and both air valves are on, turn on motorOn flag (which later turns on motor)
   if (MOTOR_ON_BUTTON.State() && CheckAir()) {
     motorOn = true;
@@ -51,7 +53,7 @@ void loop() {
     TurnOffCont(); //reset flags for other modes 
   }
 
-  /*************************************************Main State Machine*******************************************************/
+  /**************************************** MAIN STATE MACHINE ******************************************/
   if (motorOn) {    // if stop button has NOT been pressed and the air is on, then enter into the modes
     //Check which mode is selected
     if (digitalRead(SS_MODE)) {
@@ -76,7 +78,7 @@ void loop() {
 
 /*********************************** INTERRUPT SERVICE ROUTINES ************************************/
 void button1ISR() { //PALM_BUTTON_1 ISR
-        long currentTime = Milliseconds();  // Get the current time
+    long currentTime = Milliseconds();  // Get the current time
 
     // If enough time has passed since the last press, it's a valid press (debouncing)
     if (currentTime - lastButton1PressTime > debounceDelay) {
@@ -89,7 +91,7 @@ void button1ISR() { //PALM_BUTTON_1 ISR
 }
 
 void button2ISR() { //PALM_BUTTON_2 ISR
-      long currentTime = Milliseconds();  // Get the current time
+    long currentTime = Milliseconds();  // Get the current time
 
     // If enough time has passed since the last press, it's a valid press (debouncing)
     if (currentTime - lastButton2PressTime > debounceDelay) {
@@ -142,7 +144,23 @@ void LightCurtainRoutine() {
   //else, do nothing
 }
 
-/***************************************** EXTRA FUNCTIONS **********************************************************/
+/*********************************** EXTRA FUNCTIONS ****************************************/
+void MoveIndexer() {
+  if (digitalRead(INDEXER_MODE_ENABLE)) {
+    if (digitalRead(INDEXER_GEMCO)) { //cycle indexer according to press position
+      //if we are past 190 degrees ish
+      MoveDistance(1); //move one stop?
+    }
+    else if (digitalRead(INDEXER_FW)) { //jog forward
+      MoveDistance(60); //TODO change to degrees
+    }
+    else if (digitalRead(INDEXER_REV)) { //jog backward
+      //reverse
+      MoveDistance(-60); //TODO change to degrees
+    }
+    //if neither FW or REV, don't move.
+  }
+}
 
 int CheckButtonPress() { // FUNCTION to check if Palm Buttons have been pressed within X amount of time of each other
   long pressTimeDif = button2PressTime - button1PressTime;
@@ -159,17 +177,14 @@ int CheckButtonPress() { // FUNCTION to check if Palm Buttons have been pressed 
   }
 }
 
-
 bool CheckAir() {
-  /*Check if both of the air valves are ON*/
-  //TODO: uncomment air checks on-site
+  //Check if both of the air valves are ON
   if (digitalRead(AIR_1) && digitalRead(AIR_2)) {
     return true;
   }
   else {
     return false;
   }
-  // return true;
 }
 
 void TurnOffSS() { //turns off all SS related flags/lights
@@ -208,6 +223,57 @@ void DispenseOil() {
     //either can use millis() - start_time % milli_freq == 0?
     // OR there may be clearcore specific timer functions we can use.
   
+}
+
+/*------------------------------------------------------------------------------
+ * MoveDistance
+ *
+ *    Command "distance" number of step pulses away from the current position
+ *    Prints the move status to the USB serial port
+ *    Returns when HLFB asserts (indicating the motor has reached the commanded
+ *    position)
+ *
+ * Parameters:
+ *    //int distance  - The distance, in step pulses, to move
+ *    int numStops - the number of stops in 360 degrees it should take
+ *
+ * Returns: True/False depending on whether the move was successfully triggered.
+ */
+bool MoveDistance(int numStops) {
+    // Check if an alert is currently preventing motion
+    if (SERVO.StatusReg().bit.AlertsPresent) {
+        Serial.println("Servo Motor status: 'In Alert'. Move Canceled.");
+        return false;
+    }
+  
+    //compute distance based on selector switch
+    int totalStops = 0;
+    if (INDEXER_2_POS) { totalStops = 2; }
+    else if (INDEXER_5_POS) { totalStops = 5; }
+    else if (INDEXER_8_POS) { totalStops = 8; }
+    else if (INDEXER_10_POS) { totalStops = 10; }
+    else { totalStops = 12; } //12 positions
+
+    int distance = 6400 * GEAR_REDUCER * INDEXER_REDUCER * numStops / totalStops;  // pulses = pulses per motor revolution (6400) * gear box ratio (5) * indexer ratio (12 or 6) / # stops 
+
+    Serial.print("Commanding ");
+    Serial.print(distance);
+    Serial.println(" pulses");
+
+    // Command the move of incremental distance
+    SERVO.Move(distance);
+
+    // Add a short delay to allow HLFB to update
+    delay(2);
+
+    // Waits for HLFB to assert (signaling the move has successfully completed)
+    Serial.println("Moving.. Waiting for HLFB");
+    while (!SERVO.StepsComplete() || SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
+        continue;
+    }
+
+    Serial.println("Move Done");
+    return true;
 }
 
 

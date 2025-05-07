@@ -50,6 +50,9 @@ The Modes:
 
 // Define baud rate
 #define baudRate 9600
+#define TRIGGER_PULSE_TIME 25 // should this be 20?
+#define GEAR_REDUCER 5 //5 to 1
+#define INDEXER_REDUCER 12 // 12 to 1 OR 6 to 1. Update if needed and it will update in the formula
 
 /*************************************** DEFINE PINS ********************************************/
 // MAIN BOARD
@@ -63,16 +66,17 @@ The Modes:
 #define PALM_BUTTON_4 ConnectorA10 //on press *interrupt
 #define MOTOR_OFF_BUTTON ConnectorA11 //both the button on the press and the panel wired together *interrupt
 #define LIGHT_CURTAIN ConnectorA12 // *interrupt
+#define SERVO ConnectorM0 //servo motor
 
 // EXPANSION BOARD A (INPUTS)
 #define INDEXER_MODE_ENABLE CCIOA0
 #define LIGHT_CURTAIN_ENABLE CCIOA1
 #define BUMPER_STOP_ENABLE CCIOA2
-#define INDEXER_POS_1 CCIOA3
-#define INDEXER_POS_2 CCIOA4
-#define INDEXER_POS_3 CCIOA5
-#define INDEXER_POS_4 CCIOA6
-#define INDEXER_POS_5 CCIOA7
+#define INDEXER_2_POS digitalRead(CCIOA3)
+#define INDEXER_5_POS digitalRead(CCIOA4)
+#define INDEXER_8_POS digitalRead(CCIOA5)
+#define INDEXER_10_POS digitalRead(CCIOA6)
+#define INDEXER_12_POS digitalRead(CCIOA7)
 
 // EXPANSION BOARD B (INPUTS)
 #define SS_MODE CCIOB0 //left
@@ -95,6 +99,7 @@ The Modes:
 #define TDC_STOP digitalRead(CCIOC7) // TODO, MAKE SURE THIS WORKS
 
 // EXPANSION BOARD D (EMPTY)
+#define INDEXER_GEMCO digitalRead(CCIOD0) //TODO: rename this, and add to press
 
 // EXPANSION BOARD E (OUTPUTS)
 #define MOTOR_ON_LIGHT CCIOE0
@@ -202,6 +207,34 @@ void setup() {
   }
   // if you need more extender boards, simply copy the code above and change it to C or D, etc
 
+  /***************************** SETUP SERVO MOTOR ******************************************/ 
+  MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
+  SERVO.HlfbMode(MotorDriver::HLFB_MODE_HAS_BIPOLAR_PWM);
+  SERVO.HlfbCarrier(MotorDriver::HLFB_CARRIER_482_HZ);
+  SERVO.VelMax(INT32_MAX); // set max velocity
+  SERVO.AccelMax(INT32_MAX); // setup max accel
+  
+  // wait five seconds for a port to open before starting motor stuff?
+  uint32_t timeout = 5000;
+  uint32_t startTime = millis();
+  while(!Serial && millis() - startTime < timeout) {
+    continue;
+  }
+
+  SERVO.EnableRequest(true);
+  Serial.println("Motor Enabled");
+
+  //waits for HLFB to assert (waits for homing to complete if applicable)
+  Serial.println("Waiting for HLFB...");
+  timeout = 5000; // 5 second timeout
+  startTime = millis();
+  while (SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
+      if (millis() - startTime > timeout) {
+          Serial.println("Timeout waiting for HLFB. Motor may not be connected.");
+          break;
+      }
+  }
+  Serial.println("Motor Ready");
   
   /************************************ATTACH INTERRUPTS**************************************/
   /*How to Use Interrupts: 
