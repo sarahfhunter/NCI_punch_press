@@ -12,10 +12,10 @@ void Perform_SINGLE_STROKE() {
     if (TDC) {
       Perform_INCH();
     }
-    else if(downStroke) {
+    else if(DOWNSTROKE) {
       Perform_INCH();
     }
-    else if ((TDC_Stop1 || TDC_Stop2)) { 
+    else if (TDC_STOP) { 
       CLUTCH.State(false);  //disengage clutch
       ssStartedTDC = false;  // Reset for the next cycle
     }

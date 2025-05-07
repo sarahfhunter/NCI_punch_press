@@ -11,56 +11,54 @@ void loop() {
 
   /**************************************UPDATE GEMCO AND BUTTON VALUES, all are read-only variables********************************************/
   //GEMCO POSITIONS 
-  TDC = digitalRead(GemCo1);
-  downStroke = digitalRead(GemCo2);
-  TDC_Stop1 = digitalRead(GemCo3);
-  TDC_Stop2 = digitalRead(GemCo4); 
+  // TDC = digitalRead(TDC);
+  // downStroke = digitalRead(DOWNSTROKE);
+  // TDC_STOP = digitalRead(GemCo3);
+  // TDC_Stop2 = digitalRead(GemCo4); 
 
-  //PALM BUTTONS
+  //PALM BUTTONS - todo is this even helpful?
   button1Pressed = PALM_BUTTON_1.State();
   button2Pressed = PALM_BUTTON_2.State();
 
-  /****************************************UPDATE LIGHTS*********************************************************************/
-  UpdateGemCoLight(TDC_LIGHT, TDC);                //update TDC light based on GemCo1 state
-  UpdateGemCoLight(DOWNSTROKE_LIGHT, downStroke); //update downstroke light based on GemCo2 state
-  UpdateGemCoLight(GEMCO_STOP_1_LIGHT, TDC_Stop1); //update TDC_Stop1 light based on GemCo3 state
-  UpdateGemCoLight(GEMCO_STOP_2_LIGHT, TDC_Stop2); //update TDC_Stop2 light based on GemCo4 state
+  /************************************UPDATE LIGHTS********************************************/
+  UpdateGemCoLight(TDC_LIGHT, TDC);                //update light based on GemCo1 (TDC) state
+  UpdateGemCoLight(DOWNSTROKE_LIGHT, DOWNSTROKE); //update light based on GemCo2 (downstroke) state
+  UpdateGemCoLight(TDC_STOP_LIGHT, TDC_STOP); //update light based on GemCo3 (TDC stop) state
 
 
   /**************************************UPDATE MOTOR STATE*************************************/
   // If MOTOR_ON_BUTTON button is pressed and both air valves are on, turn on motorOn flag (which later turns on motor)
-  if (MOTOR_ON_BUTTON.State() && AIR_1.State() && AIR_2.State()) {
+  if (MOTOR_ON_BUTTON.State() && CheckAir()) {
     motorOn = true;
   }
 
   //if at ANY POINT the air goes off, shut off motor
-  if (!AIR_1.State() || !AIR_2.State()) {
+  if (!CheckAir()) {
     motorOn = false;
   }
 
   // if MOTOR_ON_BUTTON was previously pressed, then turn on the motor and associated lights
   if (motorOn) {
-    MOTOR_ON_LIGHT.State(true); //Contactor is Engaged (big green light on)
-    MOTOR_OFF_LIGHT.State(false);  // big red light is off
+    digitalWrite(MOTOR_ON_LIGHT, true); //Contactor is Engaged (big green light on)
+    digitalWrite(MOTOR_OFF_LIGHT, false);  // big red light is off
     MOTOR.State(true); // turn on motor
   }
   else {
-    MOTOR_ON_LIGHT.State(false); //Contactor is disengaged (big green light off)
-    MOTOR_OFF_LIGHT.State(true); //big red light on
+    digitalWrite(MOTOR_ON_LIGHT, false); //Contactor is disengaged (big green light off)
+    digitalWrite(MOTOR_OFF_LIGHT, true); //big red light on
     MOTOR.State(false); // turn off motor
     TurnOffSS(); //reset flags for other modes
     TurnOffCont(); //reset flags for other modes 
-    //Serial.println("motor ON flag turn off");
   }
 
   /*************************************************Main State Machine*******************************************************/
   if (motorOn) {    // if stop button has NOT been pressed and the air is on, then enter into the modes
     //Check which mode is selected
-    if (SS_MODE.State()) {
+    if (digitalRead(SS_MODE)) {
       TurnOffCont(); //turn off other mode's flags/lights
       Perform_SINGLE_STROKE ();
     }
-    else if (CONT_MODE.State()) {
+    else if (digitalRead(CONT_MODE)) {
       TurnOffSS(); //turn off other mode's flags/lights
       Perform_CONTINUOUS ();
     }
@@ -103,23 +101,75 @@ void button2ISR() { //PALM_BUTTON_2 ISR
     lastButton2PressTime = currentTime;
 }
 
+void button3ISR() { //PALM_BUTTON_2 ISR
+      long currentTime = Milliseconds();  // Get the current time
+
+    // If enough time has passed since the last press, it's a valid press (debouncing)
+    if (currentTime - lastButton3PressTime > debounceDelay) {
+        button3Pressed = true;
+        button3PressTime = currentTime;  // Record time of valid button press
+    }
+
+    // Update last button press time
+    lastButton3PressTime = currentTime;
+}
+
+void button4ISR() { //PALM_BUTTON_2 ISR
+      long currentTime = Milliseconds();  // Get the current time
+
+    // If enough time has passed since the last press, it's a valid press (debouncing)
+    if (currentTime - lastButton4PressTime > debounceDelay) {
+        button4Pressed = true;
+        button4PressTime = currentTime;  // Record time of valid button press
+    }
+
+    // Update last button press time
+    lastButton4PressTime = currentTime;
+}
+
 // Interrupt Service Rountine for both stops
 void StopISR() { //MOTOR_OFF_BUTTON and MOTOR_OFF_BUTTON_2 ISR
   motorOn = false; //this flag then updates the motor state in loop() 
-  Serial.println("stop was pressed");
+  // Serial.println("stop was pressed");
+}
+
+void LightCurtainRoutine() {
+  //light curtain was triggered
+  if (digitalRead(LIGHT_CURTAIN_ENABLE)) {
+    //disengage the clutch
+    CLUTCH.State(false); //TODO: how to make sure that it doesn't just get turned right back on? maybe set interrupt to HIGH not rising?
+  }
+  //else, do nothing
 }
 
 /***************************************** EXTRA FUNCTIONS **********************************************************/
 
 int CheckButtonPress() { // FUNCTION to check if Palm Buttons have been pressed within X amount of time of each other
-  long timeDif = button1PressTime - button2PressTime;
+  long pressTimeDif = button2PressTime - button1PressTime;
+  long panelTimeDif = button4PressTime - button3PressTime;
 
-  if (button1Pressed && button2Pressed && abs(timeDif) < 250) {
-      return 1;  // If buttons were pressed within X time then return a 1
-    }   
-    else {
-      return 0;   // If1 buttons were pressed within X time then return a 0
-    }
+  if (button1Pressed && button2Pressed && abs(pressTimeDif) < 250) {
+    return 1;  // If buttons were pressed within X time then return a true
+  }   
+  else if (button3Pressed && button4Pressed && abs(panelTimeDif) < 250) {
+    return 1;   // If buttons were pressed within X time then return true
+  }
+  else {
+    return 0; //if neither set of palm buttons pressed in proper timing, return false
+  }
+}
+
+
+bool CheckAir() {
+  /*Check if both of the air valves are ON*/
+  //TODO: uncomment air checks on-site
+  if (digitalRead(AIR_1) && digitalRead(AIR_2)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+  // return true;
 }
 
 void TurnOffSS() { //turns off all SS related flags/lights

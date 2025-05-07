@@ -43,116 +43,110 @@ The Modes:
     - stop continuous cycle by hitting the TOP_STOP_BUTTON on the front of the press. It will stop once it reaches TDC.
 */
 
-/*************************PIN INVENTORY*********************************/
-/*
-MAIN BOARD
-IO0 - motor-on light (output)
-IO1 - contactor for motor (output)
-IO2 - clutch engage/disengage (output)
-IO3 - red light (motor off)
-IO4 - air1 (input)
-IO5 - air2 (input)
-DI6 - motor on button (input)
-DI7 - motor off button (input) *interrupt
-DI8 - palm button 1 (left, input) *interrupt
-A9 - palm button 2 (right, input) *interrupt
-A10 - Continuous mode (input)
-A11 - Single Stroke (SS) mode (input)
-A12 - extra stop button (motor off) close to palm buttons, NC *interrupt
-
-EXTENDER BOARD A INPUTS
-CCIOA0 - top stop button 
-CCIOA1 - GemCo1
-CCIOA2 - GemCo2
-CCIOA3 - GemCo3 
-CCIOA4 - GemCo4
-CCIOA5 - arm continuous button (input) 
-CCIOA6 - chain break??
-
-EXTENDER BOARD B OUTPUTS //todo switch around to have gemco lights be 1-4?
-CCIOB0 - green led (GemCo stop 2)
-CCIOB1 - orange led (GemCo stop 1)
-CCIOB2 - red led (downstroke)
-CCIOB3 - blue led (TDC)
-CCIOB4 - green led (SS mode) // will eventually be orange I believe
-CCIOB5 - orange led (continuous mode armed)
-CCIOB6 - counter
-*/
 
 #include "ClearCore.h"  //include clearcore library
 #include <CcioPin.h>    //include clearcore library extender board
 #define CcioPort ConnectorCOM1  //for extender board
 
-//Define Button inputs
-#define PALM_BUTTON_1 ConnectorDI8 
-#define PALM_BUTTON_2 ConnectorA9
-#define MOTOR_ON_BUTTON ConnectorDI6
-#define MOTOR_OFF_BUTTON ConnectorDI7
-#define AIR_1 ConnectorIO4 // check if air is flowing 
-#define AIR_2 ConnectorIO5
-#define MOTOR_OFF_BUTTON_2 ConnectorA12 // extra stop button by the palm buttons
-#define TOP_STOP_BUTTON CCIOA0 
-#define ARM_CONTINUOUS_BUTTON CCIOA5
-
-//Define Light outputs
-#define MOTOR_ON_LIGHT ConnectorIO0 // big green one
-#define MOTOR_OFF_LIGHT ConnectorIO3 // big red one
-#define SS_LIGHT CCIOB4 // green
-#define ARM_CONTINUOUS_LIGHT CCIOB5 // ORANGE
-
-// define gemco light outputs
-#define TDC_LIGHT CCIOB3 // blue
-#define DOWNSTROKE_LIGHT CCIOB2 // red
-#define GEMCO_STOP_1_LIGHT CCIOB1 // orange
-#define GEMCO_STOP_2_LIGHT CCIOB0 // green
-
-//define other outputs
-#define MOTOR ConnectorIO1 // contactor to turn on motor
-#define CLUTCH ConnectorIO2 // engage clutch
-#define COUNTER CCIOB6 // incremement counter
-
-//Selector Switches
-//INCH_MODE is default center position. No wires connected 
-#define SS_MODE ConnectorA11 //left
-#define CONT_MODE ConnectorA10 //right
-
-// Gemco States (extender board A) (inputs)
-#define GemCo1 CCIOA1
-#define GemCo2 CCIOA2
-#define GemCo3 CCIOA3
-#define GemCo4 CCIOA4
-
 // Define baud rate
 #define baudRate 9600
+
+/*************************************** DEFINE PINS ********************************************/
+// MAIN BOARD
+#define MOTOR ConnectorIO0 // contactor to turn on motor
+#define CLUTCH ConnectorIO1 // engage clutch
+#define OIL_PUMP ConnectorIO2 //send oil
+#define MOTOR_ON_BUTTON ConnectorIO3 
+#define PALM_BUTTON_1 ConnectorDI7 //on panel *interrupt
+#define PALM_BUTTON_2 ConnectorDI8 //on panel *interrupt
+#define PALM_BUTTON_3 ConnectorA9 //on press *interrupt
+#define PALM_BUTTON_4 ConnectorA10 //on press *interrupt
+#define MOTOR_OFF_BUTTON ConnectorA11 //both the button on the press and the panel wired together *interrupt
+#define LIGHT_CURTAIN ConnectorA12 // *interrupt
+
+// EXPANSION BOARD A (INPUTS)
+#define INDEXER_MODE_ENABLE CCIOA0
+#define LIGHT_CURTAIN_ENABLE CCIOA1
+#define BUMPER_STOP_ENABLE CCIOA2
+#define INDEXER_POS_1 CCIOA3
+#define INDEXER_POS_2 CCIOA4
+#define INDEXER_POS_3 CCIOA5
+#define INDEXER_POS_4 CCIOA6
+#define INDEXER_POS_5 CCIOA7
+
+// EXPANSION BOARD B (INPUTS)
+#define SS_MODE CCIOB0 //left
+#define CONT_MODE CCIOB1 //right
+#define RAM_FW CCIOB2
+#define RAM_REV CCIOB3
+#define MOTOR_FW CCIOB4
+#define MOTOR_REV CCIOB5
+#define INDEXER_FW CCIOB6
+#define INDEXER_REV CCIOB7
+
+// EXPANSION BOARD C (INPUTS)
+#define CYCLE_INDEXER CCIOC0
+#define ARM_CONTINUOUS_BUTTON CCIOC1
+#define TOP_STOP_BUTTON CCIOC2 //panel and press wired together
+#define AIR_1 CCIOC3 // check if air is flowing 
+#define AIR_2 CCIOC4
+#define TDC digitalRead(CCIOC5) // GEMCO1 
+#define DOWNSTROKE digitalRead(CCIOC6) // GEMCO2
+#define TDC_STOP digitalRead(CCIOC7) // TODO, MAKE SURE THIS WORKS
+
+// EXPANSION BOARD D (EMPTY)
+
+// EXPANSION BOARD E (OUTPUTS)
+#define MOTOR_ON_LIGHT CCIOE0
+#define MOTOR_OFF_LIGHT CCIOE1
+#define TDC_LIGHT CCIOE2
+#define DOWNSTROKE_LIGHT CCIOE3
+#define TDC_STOP_LIGHT CCIOE4 //rename from GEMCO_STOP_...
+#define SS_LIGHT CCIOE5
+#define ARM_CONTINUOUS_LIGHT CCIOE6
+#define LIGHT_CURTAIN_ENABLED_LIGHT CCIOE7
+
+// EXPANSION BOARD F (OUTPUTS)
+#define OIL_PUMP_LIGHT CCIOF0
+#define COUNTER CCIOF1 // incremement counter
 
 /******************************INITIALIZE BOOLS + SOME FUNCTION PROTOTYPES*********************************/
 // Initialize button state and press time - volatile must be used for Arduino Interrupts
 volatile bool button1Pressed = false;
 volatile bool button2Pressed = false;
+volatile bool button3Pressed = false;
+volatile bool button4Pressed = false;
+
 volatile uint32_t button1PressTime = 0;
 volatile uint32_t button2PressTime = 0;
+volatile uint32_t button3PressTime = 0;
+volatile uint32_t button4PressTime = 0;
+
+// For manual debounce
+volatile long lastButton1PressTime = 0; 
+volatile long lastButton2PressTime = 0; 
+volatile long lastButton3PressTime = 0;
+volatile long lastButton4PressTime = 0;
+unsigned long debounceDelay = 50;  // 50ms debounce period
+
+// Initialize Interrupt Service Routines
+void button1ISR();
+void button2ISR();
+void button3ISR();
+void button4ISR();
+void StopISR();
+void LightCurtainRoutine();
 
 // GemCo renaming
-bool TDC = false;
-bool downStroke = false;
-bool TDC_Stop1 = false;
-bool TDC_Stop2 = false;
+// bool TDC = false;
+// bool downStroke = false;
+// bool TDC_Stop = false;
 
 // Other bools for Single Stroke
 bool ssStartedTDC = false;
 bool motorOn = false; // bool for turning on motor
 bool continuousModeArmed = false;  // Tracks whether continuous mode is armed
 bool TopStopButtonPressed = false; // Tracks if the top stop button is pressed
-
-// Initialize Interrupt Service Routines
-void button1ISR();
-void button2ISR();
-void StopISR();
-
-volatile long lastButton1PressTime = 0; // For manual debounce
-volatile long lastButton2PressTime = 0; // For manual debounce
-
-unsigned long debounceDelay = 50;  // 50ms debounce period
 
 
 void setup() {
@@ -161,38 +155,53 @@ void setup() {
   
   /**************************DEFINE INPUTS AND OUTPUTS******************************/
   /*-----------------------------main board----------------------------*/
-  //inputs
+  MOTOR.Mode(Connector::OUTPUT_DIGITAL);
+  CLUTCH.Mode(Connector::OUTPUT_DIGITAL);
+  OIL_PUMP.Mode(Connector::OUTPUT_DIGITAL);
+  MOTOR_ON_BUTTON.Mode(Connector::INPUT_DIGITAL);
   PALM_BUTTON_1.Mode(Connector::INPUT_DIGITAL);
   PALM_BUTTON_2.Mode(Connector::INPUT_DIGITAL);
-  MOTOR_ON_BUTTON.Mode(Connector::INPUT_DIGITAL);
+  PALM_BUTTON_3.Mode(Connector::INPUT_DIGITAL);
+  PALM_BUTTON_4.Mode(Connector::INPUT_DIGITAL);
   MOTOR_OFF_BUTTON.Mode(Connector::INPUT_DIGITAL);
-  MOTOR_OFF_BUTTON_2.Mode(Connector::INPUT_DIGITAL);
-  SS_MODE.Mode(Connector::INPUT_DIGITAL);
-  CONT_MODE.Mode(Connector::INPUT_DIGITAL);
-  AIR_1.Mode(Connector::INPUT_DIGITAL);
-  AIR_2.Mode(Connector::INPUT_DIGITAL);
+  LIGHT_CURTAIN.Mode(Connector::INPUT_DIGITAL);
 
-  //outputs
-  CLUTCH.Mode(Connector::OUTPUT_DIGITAL);
-  MOTOR.Mode(Connector::OUTPUT_DIGITAL);
-  MOTOR_ON_LIGHT.Mode(Connector::OUTPUT_DIGITAL);
-  MOTOR_OFF_LIGHT.Mode(Connector::OUTPUT_DIGITAL);
 
-  /*--------------------------- extender boards A, B --------------------------*/
+  /*--------------------------- extender boards A-F --------------------------*/
+  CcioPort.Mode(Connector::CCIO); //For CCIIO-8 (extender boards)
+  CcioPort.PortOpen();            //For CCIIO-8 (extender boards)
+
   // Set all pins on CCIOA (Extender Board 1) to be inputs
   for (int pin = CLEARCORE_PIN_CCIOA0; pin <= CLEARCORE_PIN_CCIOA7; pin++) {
       pinMode(pin, INPUT);
   }
 
-  // Set all pins on CCIOB (Extender Board 2) to be Outputs
+  // Set all pins on CCIOB (Extender Board 2) to be INPUTS
   for (int pin = CLEARCORE_PIN_CCIOB0; pin <= CLEARCORE_PIN_CCIOB7; pin++) {
+      pinMode(pin, INPUT);
+  }
+
+  // Set all pins on CCIOC (Extender Board 3) to be INPUTS
+  for (int pin = CLEARCORE_PIN_CCIOC0; pin <= CLEARCORE_PIN_CCIOC7; pin++) {
+      pinMode(pin, INPUT);
+  }
+
+  // Set all pins on CCIOD (Extender Board 4) to be INPUTS? empty rn
+  for (int pin = CLEARCORE_PIN_CCIOD0; pin <= CLEARCORE_PIN_CCIOD7; pin++) {
+      pinMode(pin, INPUT);
+  }
+
+  // Set all pins on CCIOB (Extender Board 5) to be Outputs
+  for (int pin = CLEARCORE_PIN_CCIOE0; pin <= CLEARCORE_PIN_CCIOE7; pin++) {
       pinMode(pin, OUTPUT);
   }
 
+  // Set all pins on CCIOB (Extender Board 6) to be Outputs
+  for (int pin = CLEARCORE_PIN_CCIOF0; pin <= CLEARCORE_PIN_CCIOF7; pin++) {
+      pinMode(pin, OUTPUT);
+  }
   // if you need more extender boards, simply copy the code above and change it to C or D, etc
 
-  CcioPort.Mode(Connector::CCIO); //For CCIIO-8 (extender boards)
-  CcioPort.PortOpen();            //For CCIIO-8 (extender boards)
   
   /************************************ATTACH INTERRUPTS**************************************/
   /*How to Use Interrupts: 
@@ -206,16 +215,26 @@ void setup() {
             - name of interrupt service routine function (StopISR)
             - type of interrupt: FALLING (triggers when HIGH -> LOW), RISING (triggers when LOW -> HIGH), CHANGE (triggers with any change), LOW (whenever it is low), HIGH (whenever it is high)
             - **typically** RISING or FALLING are better than just HIGH or LOW because then it only triggers if it previously was in the opposite state (which is often the goal)
+      - NB: you cannot attach interrupts to expansion boards (I don't think)
   */ 
-  attachInterrupt(digitalPinToInterrupt(8), button1ISR, RISING); // PALM_BUTTON_1 1 interrupt
-  attachInterrupt(digitalPinToInterrupt(9), button2ISR, RISING);  // PALM_BUTTON_2 interrupt
-  attachInterrupt(digitalPinToInterrupt(7), StopISR, RISING); //MOTOR_OFF_BUTTON interrupt
-  attachInterrupt(digitalPinToInterrupt(12), StopISR, FALLING); // MOTOR_OFF_BUTTON_2 interrupt
+  attachInterrupt(digitalPinToInterrupt(7), button1ISR, RISING); // PALM_BUTTON_1 1 interrupt
+  attachInterrupt(digitalPinToInterrupt(8), button2ISR, RISING);  // PALM_BUTTON_2 interrupt
+  attachInterrupt(digitalPinToInterrupt(9), button3ISR, RISING);  // PALM_BUTTON_3 interrupt
+  attachInterrupt(digitalPinToInterrupt(10), button4ISR, RISING);  // PALM_BUTTON_4 interrupt
+  attachInterrupt(digitalPinToInterrupt(11), StopISR, RISING); //MOTOR_OFF_BUTTON interrupt
+  attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, HIGH); //LIGHT CURTAIN, high instead of rising bc it needs to trigger ANYTIME something is detected, not just the first time 
+
 
   /***********************************initialize stuff**********************************/
   // Initializes all lights to start off 
-  MOTOR_ON_LIGHT.State(false);
-  MOTOR_OFF_LIGHT.State(false); 
+  digitalWrite(MOTOR_ON_LIGHT, false);
+  digitalWrite(MOTOR_OFF_LIGHT, false); 
+  digitalWrite(TDC_LIGHT, false);
+  digitalWrite(DOWNSTROKE_LIGHT, false);
+  digitalWrite(TDC_STOP_LIGHT, false);
+  digitalWrite(SS_LIGHT, false);
+  digitalWrite(ARM_CONTINUOUS_LIGHT, false);
+  digitalWrite(LIGHT_CURTAIN_ENABLED_LIGHT, false);
 
   //initialize motor and clutch to off/disengaged
   MOTOR.State(false);

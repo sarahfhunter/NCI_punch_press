@@ -18,7 +18,7 @@ void Perform_CONTINUOUS() {
   }
   
   // If the top stop button was pressed and we are at either the first or second gemco stop, disengage and reset flags
-  if (TopStopButtonPressed && (TDC_Stop1 || TDC_Stop2)) {
+  if (TopStopButtonPressed && TDC_STOP) {
       CLUTCH.State(false); // Clutch Disengaged
       TurnOffCont(); // reset local flags
   }                       
