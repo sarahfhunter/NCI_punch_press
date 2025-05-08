@@ -46,7 +46,7 @@ void Perform_SINGLE_STROKE() {
         ssStartedTDC = false;  // Reset for the next cycle
       }
       else {
-        // if none of the gemco positions are being read, just run!
+        // if after the downstroke and before the stop, just run!
         CLUTCH.State(true);
       }
     }
@@ -62,6 +62,7 @@ void Perform_SINGLE_STROKE() {
 void Perform_CONTINUOUS() {
   //TODO: if indexer mode enabled, then cap out after x number of windows. Don't require the arm continuous button
     if (digitalRead(MOTOR_FW)) {
+
         // If the ARM_CONTINUOUS_BUTTON is pressed, allow continuous mode and turn on indicator light
         if (digitalRead(ARM_CONTINUOUS_BUTTON)) {  // Check to see if Arm Continuous Button was pressed
             continuousModeArmed = true;             // Arm the continuous mode                                                   
@@ -75,11 +76,13 @@ void Perform_CONTINUOUS() {
         }
 
         if (digitalRead(INDEXER_MODE_ENABLE)) {
-          if (CLEAR_PATH && newCycle) {
+          if (TDC_STOP && newCycle) { //TODO: switch back to clear_path
             numStrokes++;
+            Serial.print("Number of strokes: ");
+            Serial.println(numStrokes);
             newCycle = false;
           }
-          else if (!CLEAR_PATH && !newCycle){
+          else if (!TDC_STOP && !newCycle){ //TODO: switch back to clear_path
             newCycle = true;
           }
         }

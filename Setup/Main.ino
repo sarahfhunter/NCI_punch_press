@@ -6,7 +6,7 @@ Purpose:
 void loop() {
   // Serial.println("main loop");
 
-  // UpdateIndexer(); //update indexer position 
+  UpdateIndexer(); //update indexer position 
 
   /******************* UPDATE BUTTON VALUES, all are read-only variables ********************/
 
@@ -15,9 +15,9 @@ void loop() {
   button2Pressed = PALM_BUTTON_2.State();
   button3Pressed = PALM_BUTTON_3.State();
   button4Pressed = PALM_BUTTON_4.State();
-  if (digitalRead(PALM_BUTTON_SELECTOR)) {
-    useButtonsOnPanel = false; //if selector is HIGH, then use buttons on PRESS not PANEL
-  }
+  // if (digitalRead(PALM_BUTTON_SELECTOR)) {
+  //   useButtonsOnPanel = false; //if selector is HIGH, then use buttons on PRESS not PANEL
+  // }
 
   /************************************ UPDATE LIGHTS & COUNTER ********************************************/
   digitalWrite(TDC_LIGHT, TDC);                //update light based on GemCo1 (TDC) state

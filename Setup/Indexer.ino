@@ -14,21 +14,33 @@ void UpdateIndexer() {
   *     If cycle indexer button is pressed, do a full rotation (move all of the stops)
   */
   if (digitalRead(INDEXER_MODE_ENABLE)) {
-    if (CLEAR_PATH) { //cycle indexer according to press position
-      //if we are past 190 degrees ish
-      MoveDistance(1); //move one stop?
+
+    if (GetTotalStops != 0) {
+      //TODO: be aware of the stops it has been going one stop on start up if it was at TDC_STOP
+      if ((TDC_STOP && !cycleBegun)) { //cycle indexer according to press position //TODO: update back to CLEAR_PATH
+        //if we are past 190 degrees ish
+        MoveDistance(1); //move one stop?
+        cycleBegun = true;
+      }
+      else if (!TDC_STOP) {
+        cycleBegun = false;
+      }
+      
+      if (digitalRead(INDEXER_FW)) { //jog forward
+        MoveDistance(0.1); //move 0.1 stop
+      }
+      else if (digitalRead(INDEXER_REV)) { //jog backward
+        //reverse
+        MoveDistance(-0.1); //move 0.1 stop
+      }
+      else if (digitalRead(CYCLE_INDEXER)) { //if the cycle indexer button is pressed, it should move one stop
+        MoveDistance(1);
+      }
+      //if neither FW or REV, don't move.
     }
-    else if (digitalRead(INDEXER_FW)) { //jog forward
-      MoveDistance(0.5); //move 0.1 stop
-    }
-    else if (digitalRead(INDEXER_REV)) { //jog backward
-      //reverse
-      MoveDistance(-0.5); //move 0.1 stop
-    }
-    else if (digitalRead(CYCLE_INDEXER)) { //if the cycle indexer button is pressed, it should move all the way around
-      MoveDistance(GetTotalStops());
-    }
-    //if neither FW or REV, don't move.
+  }
+  else {
+    Serial.println("indexer mode disabled");
   }
 }
 
@@ -77,14 +89,14 @@ bool MoveDistance(float numStops) {
     return true;
 }
 
-
 int GetTotalStops() {
   //based on 5 selector switch, return number of stops
     if (INDEXER_2_POS) { return 2; }
     else if (INDEXER_5_POS) { return 5; }
     else if (INDEXER_8_POS) { return 8; }
     else if (INDEXER_10_POS) { return 10; }
-    else { return 12; } //12 positions
+    else if (INDEXER_12_POS) { return 12; }
+    else { return 4; }
 }
 
 

@@ -64,10 +64,10 @@ The Modes:
 // #define OIL_PUMP ConnectorIO2 //send oil
 #define MOTOR_REV_CONTACTOR ConnectorIO2 // contactor for the motor that sends it in reverse
 #define MOTOR_ON_BUTTON ConnectorIO3 
-#define PALM_BUTTON_1 ConnectorDI7 //on panel *interrupt
-#define PALM_BUTTON_2 ConnectorDI8 //on panel *interrupt
-#define PALM_BUTTON_3 ConnectorA9 //on press *interrupt
-#define PALM_BUTTON_4 ConnectorA10 //on press *interrupt
+#define PALM_BUTTON_1 ConnectorDI7 //on press *interrupt
+#define PALM_BUTTON_2 ConnectorDI8 //on press *interrupt
+#define PALM_BUTTON_3 ConnectorA9 //on panel *interrupt
+#define PALM_BUTTON_4 ConnectorA10 //on panel *interrupt
 #define MOTOR_OFF_BUTTON ConnectorA11 //both the button on the press and the panel wired together *interrupt
 #define LIGHT_CURTAIN ConnectorA12 // *interrupt
 #define SERVO ConnectorM0 //servo motor
@@ -98,12 +98,12 @@ The Modes:
 #define TOP_STOP_BUTTON CCIOC2 //panel and press wired together
 #define AIR_1 CCIOC3 // check if air is flowing 
 #define AIR_2 CCIOC4
-#define TDC digitalRead(CCIOC5) // GEMCO1 
-#define DOWNSTROKE digitalRead(CCIOC6) // GEMCO2
-#define TDC_STOP digitalRead(CCIOC7) // TODO, MAKE SURE THIS WORKS
+#define TDC digitalRead(CCIOC5) // GemCo for TDC
+#define DOWNSTROKE digitalRead(CCIOC6) // GemCo for Downstroke
+#define TDC_STOP digitalRead(CCIOC7) // GemCo for TDC Stop
 
 // EXPANSION BOARD D (EMPTY)
-#define CLEAR_PATH digitalRead(CCIOD0)
+#define CLEAR_PATH digitalRead(CCIOD0) // GemCo for indexer 
 #define PALM_BUTTON_SELECTOR CCIOD1 //choose whether to use palm buttons on press or panel
 
 // EXPANSION BOARD E (OUTPUTS)
@@ -141,25 +141,13 @@ volatile long lastButton3PressTime = 0;
 volatile long lastButton4PressTime = 0;
 unsigned long debounceDelay = 50;  // 50ms debounce period
 
-// Initialize Interrupt Service Routines
-// void button1ISR();
-// void button2ISR();
-// void button3ISR();
-// void button4ISR();
-// void StopISR();
-// void LightCurtainRoutine();
-
-// GemCo renaming
-// bool TDC = false;
-// bool downStroke = false;
-// bool TDC_Stop = false;
-
 // Other bools for Single Stroke
 bool ssStartedTDC = false;
 bool motorOn = false; // bool for turning on motor
 bool continuousModeArmed = false;  // Tracks whether continuous mode is armed
 bool stopAtTop = false; // Tracks if the top stop button is pressed
 
+bool cycleBegun = false;
 int numStrokes = 0; //number of times press has struck down (indexer gemco trigger)
 
 void setup() {
@@ -219,33 +207,33 @@ void setup() {
 
 
   /***************************** SETUP SERVO MOTOR ******************************************/ 
-  // MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
-  // SERVO.HlfbMode(MotorDriver::HLFB_MODE_HAS_BIPOLAR_PWM);
-  // SERVO.HlfbCarrier(MotorDriver::HLFB_CARRIER_482_HZ);
-  // SERVO.VelMax(INT32_MAX); // set max velocity
-  // SERVO.AccelMax(INT32_MAX); // setup max accel
+  MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
+  SERVO.HlfbMode(MotorDriver::HLFB_MODE_HAS_BIPOLAR_PWM);
+  SERVO.HlfbCarrier(MotorDriver::HLFB_CARRIER_482_HZ);
+  SERVO.VelMax(INT32_MAX); // set max velocity
+  SERVO.AccelMax(INT32_MAX); // setup max accel
   
-  // // wait five seconds for a port to open before starting motor stuff?
-  // uint32_t timeout = 5000;
-  // uint32_t startTime = millis();
-  // while(!Serial && millis() - startTime < timeout) {
-  //   continue;
-  // }
+  // wait five seconds for a port to open before starting motor stuff?
+  uint32_t timeout = 5000;
+  uint32_t startTime = millis();
+  while(!Serial && millis() - startTime < timeout) {
+    continue;
+  }
 
-  // SERVO.EnableRequest(true);
-  // Serial.println("Motor Enabled");
+  SERVO.EnableRequest(true);
+  Serial.println("Motor Enabled");
 
-  // //waits for HLFB to assert (waits for homing to complete if applicable)
-  // Serial.println("Waiting for HLFB...");
-  // timeout = 5000; // 5 second timeout
-  // startTime = millis();
-  // while (SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
-  //     if (millis() - startTime > timeout) {
-  //         Serial.println("Timeout waiting for HLFB. Motor may not be connected.");
-  //         break;
-  //     }
-  // }
-  // Serial.println("Motor Ready");
+  //waits for HLFB to assert (waits for homing to complete if applicable)
+  Serial.println("Waiting for HLFB...");
+  timeout = 5000; // 5 second timeout
+  startTime = millis();
+  while (SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
+      if (millis() - startTime > timeout) {
+          Serial.println("Timeout waiting for HLFB. Motor may not be connected.");
+          break;
+      }
+  }
+  Serial.println("Motor Ready");
   
   /************************************ATTACH INTERRUPTS**************************************/
   /*How to Use Interrupts: 
@@ -290,9 +278,5 @@ void setup() {
   // Initialize local mode flags to be false
   TurnOffSS();
   TurnOffCont();
-
-  // // Turn on oil!
-  // OIL_PUMP.State(true); //turn on oil pump for ever!!!
-  // digitalWrite(OIL_PUMP_LIGHT, true);
 }
 

@@ -65,7 +65,7 @@ void LightCurtainRoutine() {
   //light curtain was triggered
   if (digitalRead(LIGHT_CURTAIN_ENABLE)) {
     //disengage the clutch
-    CLUTCH.State(false); //TODO: how to make sure that it doesn't just get turned right back on? maybe set interrupt to LOW not falling?
+    CLUTCH.State(false);
     // Serial.println("light curtain flagged, clutch disengaged");
   }
   //else, do nothing

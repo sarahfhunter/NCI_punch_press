@@ -4,13 +4,13 @@ Purpose: Extra functions
 */
 
 int CheckButtonPress() { // FUNCTION to check if Palm Buttons have been pressed within X amount of time of each other
-  long pressTimeDif = button2PressTime - button1PressTime;
-  long panelTimeDif = button4PressTime - button3PressTime;
-  //TODO: add check if (useButtonsOnPanel) 
-  if (button1Pressed && button2Pressed && abs(pressTimeDif) < 250) {
+  long pressTimeDif = button2PressTime - button1PressTime; //on press
+  long panelTimeDif = button4PressTime - button3PressTime; //on panel
+
+  if (!useButtonsOnPanel && button1Pressed && button2Pressed && abs(pressTimeDif) < 250) {
     return 1;  // If buttons were pressed within X time then return a true
   }   
-  else if (button3Pressed && button4Pressed && abs(panelTimeDif) < 250) {
+  else if (useButtonsOnPanel && button3Pressed && button4Pressed && abs(panelTimeDif) < 250) {
     return 1;   // If buttons were pressed within X time then return true
   }
   else {
@@ -50,10 +50,10 @@ bool CheckAir() {
 }
 
 
-// void UpdateLight(int light, bool state) { //TODO: get rid of this later lol
+// void UpdateLight(int light, bool state) { 
 //   if (state) {
 //     digitalWrite(light, true);
-//     // if (state == TDC) {digitalWrite(COUNTER, HIGH);} //TODO move elsewhere i think
+//     // if (state == TDC) {digitalWrite(COUNTER, HIGH);} 
 //   }
 //   else {
 //     digitalWrite(light, false);
