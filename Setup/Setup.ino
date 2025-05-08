@@ -1,6 +1,6 @@
-/* FINAL VERSION, Updated on 2/21/2025
-Purpose: Blue Punch Press
-Author: Heidi Hunter, Steele Mason and Sarah Hunter
+/*Updated on 05/08/2025
+Author: Sarah Hunter, Heidi Hunter and Steele Mason
+Purpose: Setup
 */
 
 /******************************READ ME***********************************/
@@ -61,7 +61,8 @@ The Modes:
 // MAIN BOARD
 #define MOTOR_FW_CONTACTOR ConnectorIO0 // contactor to turn on motor
 #define CLUTCH ConnectorIO1 // engage clutch
-#define OIL_PUMP ConnectorIO2 //send oil
+// #define OIL_PUMP ConnectorIO2 //send oil
+#define MOTOR_REV_CONTACTOR ConnectorIO2 // contactor for the motor that sends it in reverse
 #define MOTOR_ON_BUTTON ConnectorIO3 
 #define PALM_BUTTON_1 ConnectorDI7 //on panel *interrupt
 #define PALM_BUTTON_2 ConnectorDI8 //on panel *interrupt
@@ -73,7 +74,7 @@ The Modes:
 
 // EXPANSION BOARD A (INPUTS)
 #define INDEXER_MODE_ENABLE CCIOA0
-#define LIGHT_CURTAIN_ENABLE CCIOA1
+#define LIGHT_CURTAIN_ENABLE digitalRead(CCIOA1)
 #define BUMPER_STOP_ENABLE CCIOA2
 #define INDEXER_2_POS digitalRead(CCIOA3)
 #define INDEXER_5_POS digitalRead(CCIOA4)
@@ -102,7 +103,8 @@ The Modes:
 #define TDC_STOP digitalRead(CCIOC7) // TODO, MAKE SURE THIS WORKS
 
 // EXPANSION BOARD D (EMPTY)
-#define INDEXER_GEMCO digitalRead(CCIOD0) //TODO: rename this, and add to press
+#define CLEAR_PATH digitalRead(CCIOD0)
+#define PALM_BUTTON_SELECTOR CCIOD1 //choose whether to use palm buttons on press or panel
 
 // EXPANSION BOARD E (OUTPUTS)
 #define MOTOR_ON_LIGHT CCIOE0
@@ -115,11 +117,12 @@ The Modes:
 #define LIGHT_CURTAIN_ENABLED_LIGHT CCIOE7
 
 // EXPANSION BOARD F (OUTPUTS)
-#define OIL_PUMP_LIGHT CCIOF0
+#define CLEAR_PATH_LIGHT CCIOF0
 #define COUNTER CCIOF1 // incremement counter
-#define MOTOR_REV_CONTACTOR CCIOF2 // contactor for the motor that sends it in reverse
 
 /******************************INITIALIZE BOOLS + SOME FUNCTION PROTOTYPES*********************************/
+bool useButtonsOnPanel = true; //default is to use the palm buttons on the panel, not press
+
 // Initialize button state and press time - volatile must be used for Arduino Interrupts
 volatile bool button1Pressed = false;
 volatile bool button2Pressed = false;
@@ -167,7 +170,8 @@ void setup() {
   /*-----------------------------main board----------------------------*/
   MOTOR_FW_CONTACTOR.Mode(Connector::OUTPUT_DIGITAL);
   CLUTCH.Mode(Connector::OUTPUT_DIGITAL);
-  OIL_PUMP.Mode(Connector::OUTPUT_DIGITAL);
+  // OIL_PUMP.Mode(Connector::OUTPUT_DIGITAL);
+  MOTOR_REV_CONTACTOR.Mode(Connector::OUTPUT_DIGITAL);
   MOTOR_ON_BUTTON.Mode(Connector::INPUT_DIGITAL);
   PALM_BUTTON_1.Mode(Connector::INPUT_DIGITAL);
   PALM_BUTTON_2.Mode(Connector::INPUT_DIGITAL);
@@ -209,10 +213,10 @@ void setup() {
   for (int pin = CLEARCORE_PIN_CCIOF0; pin <= CLEARCORE_PIN_CCIOF7; pin++) {
       pinMode(pin, OUTPUT);
   }
+  // if you need more extender boards, simply copy the code above and change it to C or D, etc
 
   Serial.println("done initializing in setup");
 
-  // if you need more extender boards, simply copy the code above and change it to C or D, etc
 
   /***************************** SETUP SERVO MOTOR ******************************************/ 
   // MotorMgr.MotorModeSet(MotorManager::MOTOR_ALL, Connector::CPM_MODE_STEP_AND_DIR);
@@ -262,7 +266,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(9), button3ISR, RISING);  // PALM_BUTTON_3 interrupt
   attachInterrupt(digitalPinToInterrupt(10), button4ISR, RISING);  // PALM_BUTTON_4 interrupt
   attachInterrupt(digitalPinToInterrupt(11), StopISR, RISING); //MOTOR_OFF_BUTTON interrupt
-  attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, LOW); //LIGHT CURTAIN, high instead of rising bc it needs to trigger ANYTIME something is detected, not just the first time 
+  // attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, LOW); //LIGHT CURTAIN, LOW bc NC, and not falling bc it needs to trigger ANYTIME something is detected, not just the first time 
 
   Serial.println("done attaching interrupts");
 
@@ -272,6 +276,7 @@ void setup() {
   digitalWrite(MOTOR_OFF_LIGHT, true);
   digitalWrite(TDC_LIGHT, false);
   digitalWrite(DOWNSTROKE_LIGHT, false);
+
   digitalWrite(TDC_STOP_LIGHT, false);
   digitalWrite(SS_LIGHT, false);
   digitalWrite(ARM_CONTINUOUS_LIGHT, false);
@@ -279,15 +284,15 @@ void setup() {
 
   //initialize motor and clutch to off/disengaged
   MOTOR_FW_CONTACTOR.State(false);
-  digitalWrite(MOTOR_REV_CONTACTOR, false);
+  MOTOR_REV_CONTACTOR.State(false);
   CLUTCH.State(false); 
 
   // Initialize local mode flags to be false
   TurnOffSS();
   TurnOffCont();
 
-  // Turn on oil!
-  OIL_PUMP.State(true); //turn on oil pump for ever!!!
-  digitalWrite(OIL_PUMP_LIGHT, true);
+  // // Turn on oil!
+  // OIL_PUMP.State(true); //turn on oil pump for ever!!!
+  // digitalWrite(OIL_PUMP_LIGHT, true);
 }
 

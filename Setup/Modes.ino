@@ -1,4 +1,7 @@
-/************INCH, SINGLE STROKE, AND CONTINUOUS MODE*************/
+/*Updated on 05/08/2025
+Author: Sarah Hunter, Heidi Hunter and Steele Mason
+Purpose: INCH, SINGLE STROKE, AND CONTINUOUS MODE
+*/
 
 // INCH/JOG CLUTCH CONTROL CYCLE
 bool newCycle = true;
@@ -72,11 +75,11 @@ void Perform_CONTINUOUS() {
         }
 
         if (digitalRead(INDEXER_MODE_ENABLE)) {
-          if (INDEXER_GEMCO && newCycle) {
+          if (CLEAR_PATH && newCycle) {
             numStrokes++;
             newCycle = false;
           }
-          else if (!INDEXER_GEMCO){
+          else if (!CLEAR_PATH && !newCycle){
             newCycle = true;
           }
         }

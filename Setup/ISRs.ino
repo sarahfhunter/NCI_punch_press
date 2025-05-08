@@ -1,4 +1,7 @@
-/*********************************** INTERRUPT SERVICE ROUTINES ************************************/
+/*Updated on 05/08/2025
+Author: Sarah Hunter, Heidi Hunter and Steele Mason
+Purpose: INTERRUPT SERVICE ROUTINES
+*/
 
 void button1ISR() { //PALM_BUTTON_1 ISR
     long currentTime = Milliseconds();  // Get the current time
@@ -62,7 +65,7 @@ void LightCurtainRoutine() {
   //light curtain was triggered
   if (digitalRead(LIGHT_CURTAIN_ENABLE)) {
     //disengage the clutch
-    CLUTCH.State(false); //TODO: how to make sure that it doesn't just get turned right back on? maybe set interrupt to HIGH not rising?
+    CLUTCH.State(false); //TODO: how to make sure that it doesn't just get turned right back on? maybe set interrupt to LOW not falling?
     // Serial.println("light curtain flagged, clutch disengaged");
   }
   //else, do nothing

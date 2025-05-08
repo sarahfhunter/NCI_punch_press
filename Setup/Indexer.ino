@@ -1,17 +1,32 @@
-/********* INDEXER ***********/
+/*Updated on 05/08/2025
+Author: Sarah Hunter, Heidi Hunter and Steele Mason
+Purpose: INDEXER
+*/
 
 void UpdateIndexer() {
+  /*  Update the position of the indexer based on:
+  *     - the position of the press (CLEAR_PATH)
+  *     - the indexer jog FW/REV toggle
+  *     - the cycle indexer button
+  *
+  *     If CLEAR_PATH is HI, move one stop (based on number of positions selected on servo)   
+  *     If jog FW/ jog REV is selected, move a fraction of a stop
+  *     If cycle indexer button is pressed, do a full rotation (move all of the stops)
+  */
   if (digitalRead(INDEXER_MODE_ENABLE)) {
-    if (digitalRead(INDEXER_GEMCO)) { //cycle indexer according to press position
+    if (CLEAR_PATH) { //cycle indexer according to press position
       //if we are past 190 degrees ish
       MoveDistance(1); //move one stop?
     }
     else if (digitalRead(INDEXER_FW)) { //jog forward
-      MoveDistance(0.1); //move 0.1 stop
+      MoveDistance(0.5); //move 0.1 stop
     }
     else if (digitalRead(INDEXER_REV)) { //jog backward
       //reverse
-      MoveDistance(-0.1); //move 0.1 stop
+      MoveDistance(-0.5); //move 0.1 stop
+    }
+    else if (digitalRead(CYCLE_INDEXER)) { //if the cycle indexer button is pressed, it should move all the way around
+      MoveDistance(GetTotalStops());
     }
     //if neither FW or REV, don't move.
   }
@@ -38,16 +53,16 @@ bool MoveDistance(float numStops) {
         return false;
     }
   
-    //compute distance based on selector switch
-    int distance = 6400 * GEAR_REDUCER * INDEXER_REDUCER * numStops / GetTotalStops();  
-    // pulses = pulses per motor revolution (6400) * gear box ratio (5) * indexer ratio (12 or 6) number of stops / total stops 
+    //compute number of pulses needed based on selector switch
+    int pulses = 6400 * GEAR_REDUCER * INDEXER_REDUCER * numStops / GetTotalStops();  
+    // pulses = pulses per motor revolution (6400) * gear box ratio (5) * indexer ratio (12 or 6) * number of stops / total stops 
 
     Serial.print("Commanding ");
-    Serial.print(distance);
+    Serial.print(pulses);
     Serial.println(" pulses");
 
     // Command the move of incremental distance
-    SERVO.Move(distance);
+    SERVO.Move(pulses);
 
     // Add a short delay to allow HLFB to update
     delay(2);
