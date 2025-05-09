@@ -105,7 +105,7 @@ The Modes:
 
 // EXPANSION BOARD D (EMPTY)
 #define CLEAR_PATH digitalRead(CCIOD0) // GemCo for indexer 
-#define PALM_BUTTON_SELECTOR CCIOD1 //choose whether to use palm buttons on press or panel
+#define PALM_BUTTONS_ON_PANEL !digitalRead(CCIOD1) //choose whether to use palm buttons on press or panel
 
 // EXPANSION BOARD E (OUTPUTS)
 #define MOTOR_ON_LIGHT CCIOE0

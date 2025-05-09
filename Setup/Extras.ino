@@ -7,10 +7,10 @@ int CheckButtonPress() { // FUNCTION to check if Palm Buttons have been pressed 
   long pressTimeDif = button2PressTime - button1PressTime; //on press
   long panelTimeDif = button4PressTime - button3PressTime; //on panel
 
-  if (!useButtonsOnPanel && button1Pressed && button2Pressed && abs(pressTimeDif) < 250) {
+  if (!PALM_BUTTONS_ON_PANEL && button1Pressed && button2Pressed && abs(pressTimeDif) < 250) {
     return 1;  // If buttons were pressed within X time then return a true
   }   
-  else if (useButtonsOnPanel && button3Pressed && button4Pressed && abs(panelTimeDif) < 250) {
+  else if (PALM_BUTTONS_ON_PANEL && button3Pressed && button4Pressed && abs(panelTimeDif) < 250) {
     return 1;   // If buttons were pressed within X time then return true
   }
   else {
