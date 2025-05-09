@@ -1,22 +1,18 @@
-/*Updated on 05/08/2025
+/*Updated on 05/09/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: INCH, SINGLE STROKE, AND CONTINUOUS MODE
 */
 
 // INCH/JOG CLUTCH CONTROL CYCLE
-// bool newCycle = true;
 
 void Perform_INCH () {
     
   // If buttons were pressed within X amount of time of each other then engage Clutch
   if (CheckButtonPress() == 1) {
       CLUTCH.State(true);  //engage clutch
-      // Serial.println("Clutch engaged");
     }   
     else {
       CLUTCH.State(false);   //disengage clutch
-      // Serial.println("Clutch DISengaged");
-      // Serial.println("\n");
     }
 
 }
@@ -65,11 +61,23 @@ void Perform_SINGLE_STROKE() {
 // CONTINUOUS CLUTCH CONTROL CYCLE
 
 void Perform_CONTINUOUS() {
-  //TODO: if indexer mode enabled, then cap out after x number of windows. Don't require the arm continuous button?
+
+  //TODO: Don't require the arm continuous button?
     if (digitalRead(MOTOR_FW)) {
 
+        //enable continuous mode enable based on indexer mode
+        if (digitalRead(INDEXER_MODE_ENABLE)) {
+          continuousModeArmed = true;
+          digitalWrite(ARM_CONTINUOUS_LIGHT, true);
+          enabledViaIndexer = true;
+        }
+        else if (!digitalRead(INDEXER_MODE_ENABLE) && enabledViaIndexer) {
+          continuousModeArmed = false;
+          digitalWrite(ARM_CONTINUOUS_LIGHT, false);
+        }
+
         // If the ARM_CONTINUOUS_BUTTON is pressed, allow continuous mode and turn on indicator light
-        if (digitalRead(ARM_CONTINUOUS_BUTTON)) {  // Check to see if Arm Continuous Button was pressed
+        if (digitalRead(ARM_CONTINUOUS_BUTTON)) { //|| digitalRead(INDEXER_MODE_ENABLE)) {  // Check to see if Arm Continuous Button was pressed
             continuousModeArmed = true;             // Arm the continuous mode                                                   
             digitalWrite(ARM_CONTINUOUS_LIGHT, true); // Turn arm continuous light ON
         }
@@ -77,7 +85,6 @@ void Perform_CONTINUOUS() {
         // If the press is at TDC, the buttons are pushed, and continuous mode armed, RUN!
         if (TDC && continuousModeArmed && CheckButtonPress()) {  
             CLUTCH.State(true); // run
-            // Serial.println("Clutch engaged");
         }
         
         // Check for the Top Stop Button press or maxing out cycles (if indexer mode enabled)
@@ -90,7 +97,6 @@ void Perform_CONTINUOUS() {
             CLUTCH.State(false); // Clutch Disengaged
             Serial.println("Clutch should disengage");
             TurnOffCont(); // reset local flags
-            numStrokes = 0; //reset number of strokes taken
         } 
     }
 }

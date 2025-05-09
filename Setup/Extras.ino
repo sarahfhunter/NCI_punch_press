@@ -1,4 +1,4 @@
-/*Updated on 05/08/2025
+/*Updated on 05/09/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: Extra functions
 */
@@ -31,6 +31,8 @@ void TurnOffCont() { //turns off all Continuous related flags/lights
   digitalWrite(ARM_CONTINUOUS_LIGHT, false); // turn the arm continous light OFF 
   continuousModeArmed = false;      // disarm the continuous mode
   stopAtTop = false;   // reset for next cycle
+  numStrokes = 0;
+  enabledViaIndexer = false;
 }
 
 void UpdateCounter() {
@@ -60,32 +62,4 @@ bool CheckAir() {
   // }
   return true;
 }
-
-
-// void UpdateLight(int light, bool state) { 
-//   if (state) {
-//     digitalWrite(light, true);
-//     // if (state == TDC) {digitalWrite(COUNTER, HIGH);} 
-//   }
-//   else {
-//     digitalWrite(light, false);
-//     // if (state == TDC) {digitalWrite(COUNTER, LOW);}
-//   }
-// }
-
-// void DispenseOil() {
-//   /*GOAL: 
-//     we want to dispense oil/lubricate at a given frequency
-//     anything else?
-//   */
-
-//   //need to have a (global?) timer variable that is started and stopped. when? whenever green button is hit.
-//   //we want to lubricate every x minutes.
-//   // if that timer is mod x == 0, then lubricate 
-
-//   //choosing the timer method will be the most advanced
-//     //either can use millis() - start_time % milli_freq == 0?
-//     // OR there may be clearcore specific timer functions we can use.
-  
-// }
 

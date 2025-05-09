@@ -1,10 +1,9 @@
-/*Updated on 05/08/2025
+/*Updated on 05/09/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose:
 */
 
 void loop() {
-  // Serial.println("main loop");
 
   UpdateIndexer(); //update indexer position 
 
@@ -25,10 +24,10 @@ void loop() {
   digitalWrite(INDEXER_MODE_ENABLE_LIGHT, digitalRead(INDEXER_MODE_ENABLE));
   UpdateCounter();
 
-  //bumper stop
-  // only takes place during continuous mode
-  //if bumper stop (limit switch) is not HIGH and press is at TDC, disengage the clutch - or kick out of continuous mode?
-  // maybe say CLUTCH.State(false) and turnOffCont() to disable continuous mode so that the clutch won't immediately engage again.
+  //TODO: add bumper stop
+    // only takes place during continuous mode
+    //if bumper stop (limit switch) is not HIGH and press is at TDC, disengage the clutch - or kick out of continuous mode?
+    // maybe say CLUTCH.State(false) and turnOffCont() to disable continuous mode so that the clutch won't immediately engage again.
 
   /************************************** UPDATE MOTOR STATE *************************************/
   // If MOTOR_ON_BUTTON button is pressed, and both air valves are on: turn on motorOn flag (which later turns on motor)
@@ -54,17 +53,14 @@ void loop() {
     if (digitalRead(MOTOR_FW)) {
       MOTOR_REV_CONTACTOR.State(false); // turn OFF motor in reverse
       MOTOR_FW_CONTACTOR.State(true); // turn on motor in forward
-      Serial.println("Motor FW");
     }
     else if (digitalRead(MOTOR_REV)) {
       MOTOR_FW_CONTACTOR.State(false); // turn off fw motor!!!
       MOTOR_REV_CONTACTOR.State(true); // turn on motor in reverse
-      Serial.println("Motor REV");
     }
     else {
       // do nothing
-    }
-    
+    } 
   }
   else {
     digitalWrite(MOTOR_ON_LIGHT, false); //Contactor is disengaged (big green light off)
@@ -73,7 +69,6 @@ void loop() {
     MOTOR_REV_CONTACTOR.State(false); // turn OFF motor in reverse
     TurnOffSS(); //reset flags for other modes
     TurnOffCont(); //reset flags for other modes 
-    // Serial.println("Motor Off");
   }
 
   /**************************************** MAIN STATE MACHINE ******************************************/

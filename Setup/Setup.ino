@@ -1,4 +1,4 @@
-/*Updated on 05/08/2025
+/*Updated on 05/09/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: Setup
 */
@@ -6,7 +6,7 @@ Purpose: Setup
 /******************************READ ME***********************************/
 /*
 Basic Info About the Press:
-- the punch press operates via a motor that runs a large flywheel. 
+- the punch press operates via a motor that runs a large flywheel.
 - When the clutch is engaged, it follows a cyclical path up and down.
 - the press has two air stops that need to be on in order to run the motor.
 - the press uses a GemCo CAM to keep track of where the press is throughout it's cycle
@@ -16,15 +16,15 @@ The GemCo CAM states:
 - there are four GemCo CAMs currently setup to detect the following positions (also shown in a diagram on the press):
   1. TDC (top dead center). When the press is between approx. -5°/+5° of the true top dead center, this GemCo CAM reads true
   2. Down stroke. When the press is between approx 5°-170° (just after TDC and just before bottom dead center)
-  3. TDC Stop 1. Triggered when the press is at approximately -20° from TDC. This is the first indicator that we are getting close to TDC
+  3. Indexer trigger. This is from approximately 195°-280° (idk) and indicates that the indexer is clear to move one stop
+  4. TDC Stop. Triggered when the press is at approximately -15° from TDC. Clutch is disengaged at this point but momentum carries it to TDC ish
 
 The Safety Features:
 - these features are checked via the clearcore code:
-  - two air valves are checked, if one isn't on, motor turns off
-  - two motor stop buttons: one red button on the panel, and one button on the front of the press. When either pressed, motor turns off.
+  - two air valves are checked, if one isn't on, motor turns off (baked into hardware in this press, not code)
+  - three motor stop buttons: one red button on the panel, and one button on the front of the press. When either pressed, motor turns off.
 - these features are built into the circuitry:
   - E-stop
-  - motor-on contactor switch (green button on front of panel)
   - chain break switch (coming soon!)
   - ground fault sensor (coming soon!)
 
@@ -43,7 +43,9 @@ The Modes:
 
   Additional modes:
   - Enable light curtains
+      - this is enabled during Setup(), not possible to update once clearcore is up and running. Need to e-stop to change it
   - Enable use of a servo indexer
+  - Bumper stop enable
 */
 
 
@@ -62,7 +64,6 @@ The Modes:
 // MAIN BOARD
 #define MOTOR_FW_CONTACTOR ConnectorIO0 // contactor to turn on motor
 #define CLUTCH ConnectorIO1 // engage clutch
-// #define OIL_PUMP ConnectorIO2 //send oil
 #define MOTOR_REV_CONTACTOR ConnectorIO2 // contactor for the motor that sends it in reverse
 #define MOTOR_ON_BUTTON ConnectorIO3 
 #define PALM_BUTTON_1 ConnectorDI7 //on press *interrupt
@@ -148,10 +149,13 @@ bool ssStartedTDC = false;
 bool motorOn = false; // bool for turning on motor
 bool continuousModeArmed = false;  // Tracks whether continuous mode is armed
 bool stopAtTop = false; // Tracks if the top stop button is pressed
+bool enabledViaIndexer = false;
 
 bool cycleBegun = false;
 bool enableSS = true;
 int numStrokes = 0; //number of times press has struck down (indexer gemco trigger)
+
+
 
 void setup() {
 
@@ -257,7 +261,9 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(9), button3ISR, RISING);  // PALM_BUTTON_3 interrupt
   attachInterrupt(digitalPinToInterrupt(10), button4ISR, RISING);  // PALM_BUTTON_4 interrupt
   attachInterrupt(digitalPinToInterrupt(11), StopISR, RISING); //MOTOR_OFF_BUTTON interrupt
-  attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, LOW); //LIGHT CURTAIN, LOW bc NC, and not falling bc it needs to trigger ANYTIME something is detected, not just the first time 
+  if (LIGHT_CURTAIN_ENABLE) {
+    attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, LOW); //LIGHT CURTAIN, LOW bc NC, and not falling bc it needs to trigger ANYTIME something is detected, not just the first time 
+  }
 
   Serial.println("done attaching interrupts");
 

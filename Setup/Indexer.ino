@@ -1,8 +1,9 @@
-/*Updated on 05/08/2025
+/*Updated on 05/09/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: INDEXER
 */
 bool newCycle = true;
+bool cycleEnabled = true;
 
 void UpdateIndexer() {
   /*  Update the position of the indexer based on:
@@ -15,37 +16,37 @@ void UpdateIndexer() {
   *     If cycle indexer button is pressed, do a full rotation (move all of the stops)
   */
   if (digitalRead(INDEXER_MODE_ENABLE)) {
-    //TODO: be aware of the stops it has been going one stop on start up if it was at TDC_STOP
-    //TODO: ERROR!!!! When we move the indexer based on CLEAR_PATH, it prevents the TDC_STOP light from being detected in the continuous mode function??
+    //ERROR FIXED!!!! When we move the indexer based on CLEAR_PATH, it prevents the TDC_STOP light from being detected in the continuous mode function??
+      //this was caused by blocking code (i don't totally know why). Jog and cycle are still blocking code, but moving it based on gemco is now non-blocking.
       
-    if (TDC_STOP && newCycle) {
-      //TODO: consider counting number of strokes when movedistance() is called and pulses are sent, instead of via the gemco!
+    if (CLEAR_PATH && newCycle) {
         Serial.println("Entering MoveDistance from CLEAR_PATH");
-        MoveDistance(1); //move one stop
+        MoveDistance(1, false); //move one stop
         numStrokes++;
         Serial.print("Number of strokes: ");
         Serial.println(numStrokes);
         newCycle = false;
     }
-    else if (!TDC_STOP && !newCycle){
+    else if (!CLEAR_PATH && !newCycle){
       newCycle = true;
       Serial.println("Resetting newCycle from CLEAR_PATH");
     }
     
     if (digitalRead(INDEXER_FW)) { //jog forward
-      MoveDistance(GetTotalStops()/SERVO_PPR); //jog forward 60 pulses
+      MoveDistance(GetTotalStops()/SERVO_PPR, true); //jog forward 60 pulses
     }
     else if (digitalRead(INDEXER_REV)) { //jog backward
-      //reverse
-      MoveDistance(-GetTotalStops()/SERVO_PPR); //jog backward 60 pulses
+      MoveDistance(-GetTotalStops()/SERVO_PPR, true); //jog backward 60 pulses
     }
-    else if (digitalRead(CYCLE_INDEXER)) { //if the cycle indexer button is pressed, it should move one stop
-      MoveDistance(1);
+    else if (digitalRead(CYCLE_INDEXER) && cycleEnabled) { //if the cycle indexer button is pressed, it should move one stop
+      MoveDistance(1, true);
     }
-    //if neither FW or REV, don't move
+    else {
+      //if neither FW or REV, or cycling, don't move
+    }
   }
   else {
-    Serial.println("indexer mode disabled");
+    // Indexer mode disabled
   }
 }
 
@@ -63,7 +64,7 @@ void UpdateIndexer() {
  *
  * Returns: True/False depending on whether the move was successfully triggered.
  */
-bool MoveDistance(float numStops) {
+bool MoveDistance(float numStops, bool block) {
     // Check if an alert is currently preventing motion
     if (SERVO.StatusReg().bit.AlertsPresent) {
         Serial.println("Servo Motor status: 'In Alert'. Move Canceled.");
@@ -81,19 +82,22 @@ bool MoveDistance(float numStops) {
     // Command the move of incremental distance
     SERVO.Move(pulses);
 
-    //TODO: come back to this and see if we can't implement a non blocking solution that would allow the jog and cycle options to work.
-    // Add a short delay to allow HLFB to update
-    delay(2);
+    if (block) {
+      // Add a short delay to allow HLFB to update
+      delay(2);
 
-    // Waits for HLFB to assert (signaling the move has successfully completed)
-    Serial.println("Moving.. Waiting for HLFB");
-    while (!SERVO.StepsComplete() || SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
-        continue;
+      // Waits for HLFB to assert (signaling the move has successfully completed)
+      Serial.println("Moving.. Waiting for HLFB");
+      while (!SERVO.StepsComplete() || SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
+          continue;
+      }
+
+      Serial.println("Move Done");
     }
-
-    Serial.println("Move Done");
+    
     return true;
 }
+
 
 int GetTotalStops() {
   //based on 5 selector switch, return number of stops

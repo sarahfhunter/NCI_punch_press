@@ -1,4 +1,4 @@
-/*Updated on 05/08/2025
+/*Updated on 05/09/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: INTERRUPT SERVICE ROUTINES
 */
@@ -58,7 +58,6 @@ void button4ISR() { //PALM_BUTTON_2 ISR
 // Interrupt Service Rountine for both stops
 void StopISR() { //MOTOR_OFF_BUTTON and MOTOR_OFF_BUTTON_2 ISR
   motorOn = false; //this flag then updates the motor state in loop() 
-  // Serial.println("stop was pressed");
 }
 
 void LightCurtainRoutine() {
@@ -67,7 +66,10 @@ void LightCurtainRoutine() {
     //disengage the clutch
     CLUTCH.State(false);
     FlashLightCurtainLight();
-    // Serial.println("light curtain flagged, clutch disengaged");
+    
+    //reset all flags after light curtain is done being triggered
+    TurnOffCont();
+    TurnOffSS();
   }
   //else, do nothing
 }
