@@ -149,6 +149,7 @@ bool continuousModeArmed = false;  // Tracks whether continuous mode is armed
 bool stopAtTop = false; // Tracks if the top stop button is pressed
 
 bool cycleBegun = false;
+bool enableSS = true;
 int numStrokes = 0; //number of times press has struck down (indexer gemco trigger)
 
 void setup() {

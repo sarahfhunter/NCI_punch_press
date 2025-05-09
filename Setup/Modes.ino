@@ -29,8 +29,12 @@ void Perform_SINGLE_STROKE() {
   
     digitalWrite(SS_LIGHT, true); //indicate that SS mode is selected
 
+    if (!enableSS && !CheckButtonPress()) {
+      enableSS = true;
+    }
+
     // start SS by checking if at TDC, if palm buttons pressed, and if we haven't already started SS
-    if (TDC && CheckButtonPress() && !ssStartedTDC) {
+    if (TDC && CheckButtonPress() && !ssStartedTDC && enableSS) {
         ssStartedTDC = true;
     }
 
@@ -44,6 +48,7 @@ void Perform_SINGLE_STROKE() {
       else if (TDC_STOP) { 
         CLUTCH.State(false);  //disengage clutch
         ssStartedTDC = false;  // Reset for the next cycle
+        enableSS = false;
       }
       else {
         // if after the downstroke and before the stop, just run!
