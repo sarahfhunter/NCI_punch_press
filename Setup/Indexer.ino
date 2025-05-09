@@ -14,30 +14,27 @@ void UpdateIndexer() {
   *     If cycle indexer button is pressed, do a full rotation (move all of the stops)
   */
   if (digitalRead(INDEXER_MODE_ENABLE)) {
-
-    if (GetTotalStops != 0) {
-      //TODO: be aware of the stops it has been going one stop on start up if it was at TDC_STOP
-      if ((TDC_STOP && !cycleBegun)) { //cycle indexer according to press position //TODO: update back to CLEAR_PATH
-        //if we are past 190 degrees ish
-        MoveDistance(1); //move one stop?
-        cycleBegun = true;
-      }
-      else if (!TDC_STOP) {
-        cycleBegun = false;
-      }
-      
-      if (digitalRead(INDEXER_FW)) { //jog forward
-        MoveDistance(0.1); //move 0.1 stop
-      }
-      else if (digitalRead(INDEXER_REV)) { //jog backward
-        //reverse
-        MoveDistance(-0.1); //move 0.1 stop
-      }
-      else if (digitalRead(CYCLE_INDEXER)) { //if the cycle indexer button is pressed, it should move one stop
-        MoveDistance(1);
-      }
-      //if neither FW or REV, don't move.
+    //TODO: be aware of the stops it has been going one stop on start up if it was at TDC_STOP
+    if (TDC_STOP && !cycleBegun) { //cycle indexer according to press position //TODO: update back to CLEAR_PATH
+      //if we are past 190 degrees ish
+      MoveDistance(1); //move one stop?
+      cycleBegun = true;
     }
+    else if (!TDC_STOP) {
+      cycleBegun = false;
+    }
+    
+    if (digitalRead(INDEXER_FW)) { //jog forward
+      MoveDistance(GetTotalStops()/SERVO_PPR); //jog forward 60 pulses
+    }
+    else if (digitalRead(INDEXER_REV)) { //jog backward
+      //reverse
+      MoveDistance(-GetTotalStops()/SERVO_PPR); //jog backward 60 pulses
+    }
+    else if (digitalRead(CYCLE_INDEXER)) { //if the cycle indexer button is pressed, it should move one stop
+      MoveDistance(1);
+    }
+    //if neither FW or REV, don't move
   }
   else {
     Serial.println("indexer mode disabled");
@@ -66,7 +63,7 @@ bool MoveDistance(float numStops) {
     }
   
     //compute number of pulses needed based on selector switch
-    int pulses = 6400 * GEAR_REDUCER * INDEXER_REDUCER * numStops / GetTotalStops();  
+    int pulses = SERVO_PPR * GEAR_REDUCER * INDEXER_REDUCER * numStops / GetTotalStops();  
     // pulses = pulses per motor revolution (6400) * gear box ratio (5) * indexer ratio (12 or 6) * number of stops / total stops 
 
     Serial.print("Commanding ");

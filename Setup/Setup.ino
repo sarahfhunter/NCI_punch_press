@@ -54,6 +54,7 @@ The Modes:
 // Define baud rate
 #define baudRate 9600
 #define TRIGGER_PULSE_TIME 25 // should this be 20?
+#define SERVO_PPR 6400.0 //the number of pulses per revolution for the servo (change here)!
 #define GEAR_REDUCER 5 //5 to 1
 #define INDEXER_REDUCER 12 // 12 to 1 OR 6 to 1. Update if needed and it will update in the formula
 

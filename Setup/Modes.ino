@@ -76,13 +76,14 @@ void Perform_CONTINUOUS() {
         }
 
         if (digitalRead(INDEXER_MODE_ENABLE)) {
-          if (TDC_STOP && newCycle) { //TODO: switch back to clear_path
+          if (CLEAR_PATH && newCycle) {
+          //TODO: consider counting number of strokes when movedistance() is called and pulses are sent, instead of via the gemco!
             numStrokes++;
             Serial.print("Number of strokes: ");
             Serial.println(numStrokes);
             newCycle = false;
           }
-          else if (!TDC_STOP && !newCycle){ //TODO: switch back to clear_path
+          else if (!CLEAR_PATH && !newCycle){ 
             newCycle = true;
           }
         }
