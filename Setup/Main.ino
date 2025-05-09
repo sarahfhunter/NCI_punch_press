@@ -22,7 +22,13 @@ void loop() {
   digitalWrite(TDC_STOP_LIGHT, TDC_STOP); //update light based on GemCo3 (TDC stop) state
   digitalWrite(CLEAR_PATH_LIGHT, CLEAR_PATH); // GemCo for indexer being able to rotate safely
   digitalWrite(LIGHT_CURTAIN_ENABLED_LIGHT, LIGHT_CURTAIN_ENABLE);
+  digitalWrite(INDEXER_MODE_ENABLE_LIGHT, digitalRead(INDEXER_MODE_ENABLE));
   UpdateCounter();
+
+  //bumper stop
+  // only takes place during continuous mode
+  //if bumper stop (limit switch) is not HIGH and press is at TDC, disengage the clutch - or kick out of continuous mode?
+  // maybe say CLUTCH.State(false) and turnOffCont() to disable continuous mode so that the clutch won't immediately engage again.
 
   /************************************** UPDATE MOTOR STATE *************************************/
   // If MOTOR_ON_BUTTON button is pressed, and both air valves are on: turn on motorOn flag (which later turns on motor)
@@ -30,10 +36,11 @@ void loop() {
     motorOn = true;
   }
   
-  if (digitalRead(MOTOR_REV)) {
-    //let the flywheel slow down, user will have to visually see when flywheel stops and can hit green button again.
-    motorOn = false;
-  }
+  //TODO: add a safety so you can't switch between FW and REV
+  // if (digitalRead(MOTOR_REV)) {
+  //   //let the flywheel slow down, user will have to visually see when flywheel stops and can hit green button again.
+  //   motorOn = false;
+  // }
 
   //if at ANY POINT the air goes off, shut off motor
   if (!CheckAir()) {
@@ -44,24 +51,26 @@ void loop() {
   if (motorOn) {
     digitalWrite(MOTOR_ON_LIGHT, true); //Contactor is Engaged (big green light on)
     digitalWrite(MOTOR_OFF_LIGHT, false);  // big red light is off
-    // if (digitalRead(MOTOR_FW)) {
-      // MOTOR_REV_CONTACTOR.State(false); // turn OFF motor in reverse
+    if (digitalRead(MOTOR_FW)) {
+      MOTOR_REV_CONTACTOR.State(false); // turn OFF motor in reverse
       MOTOR_FW_CONTACTOR.State(true); // turn on motor in forward
-      // Serial.println("Motor FW");
-      
-    // }
-    // else {
-      // MOTOR_FW_CONTACTOR.State(false); // turn off fw motor!!!
-      // MOTOR_REV_CONTACTOR.State(true); // turn on motor in reverse
-      // Serial.println("Motor REV");
-    // }
+      Serial.println("Motor FW");
+    }
+    else if (digitalRead(MOTOR_REV)) {
+      MOTOR_FW_CONTACTOR.State(false); // turn off fw motor!!!
+      MOTOR_REV_CONTACTOR.State(true); // turn on motor in reverse
+      Serial.println("Motor REV");
+    }
+    else {
+      // do nothing
+    }
     
   }
   else {
     digitalWrite(MOTOR_ON_LIGHT, false); //Contactor is disengaged (big green light off)
     digitalWrite(MOTOR_OFF_LIGHT, true); //big red light on
     MOTOR_FW_CONTACTOR.State(false); // turn off motor
-    // MOTOR_REV_CONTACTOR.State(false); // turn OFF motor in reverse
+    MOTOR_REV_CONTACTOR.State(false); // turn OFF motor in reverse
     TurnOffSS(); //reset flags for other modes
     TurnOffCont(); //reset flags for other modes 
     // Serial.println("Motor Off");

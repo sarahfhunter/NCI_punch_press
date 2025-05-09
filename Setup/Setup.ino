@@ -120,6 +120,7 @@ The Modes:
 // EXPANSION BOARD F (OUTPUTS)
 #define CLEAR_PATH_LIGHT CCIOF0
 #define COUNTER CCIOF1 // incremement counter
+#define INDEXER_MODE_ENABLE_LIGHT CCIOF2
 
 /******************************INITIALIZE BOOLS + SOME FUNCTION PROTOTYPES*********************************/
 bool useButtonsOnPanel = true; //default is to use the palm buttons on the panel, not press
@@ -256,7 +257,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(9), button3ISR, RISING);  // PALM_BUTTON_3 interrupt
   attachInterrupt(digitalPinToInterrupt(10), button4ISR, RISING);  // PALM_BUTTON_4 interrupt
   attachInterrupt(digitalPinToInterrupt(11), StopISR, RISING); //MOTOR_OFF_BUTTON interrupt
-  // attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, LOW); //LIGHT CURTAIN, LOW bc NC, and not falling bc it needs to trigger ANYTIME something is detected, not just the first time 
+  attachInterrupt(digitalPinToInterrupt(12), LightCurtainRoutine, LOW); //LIGHT CURTAIN, LOW bc NC, and not falling bc it needs to trigger ANYTIME something is detected, not just the first time 
 
   Serial.println("done attaching interrupts");
 

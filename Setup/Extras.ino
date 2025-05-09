@@ -3,6 +3,10 @@ Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: Extra functions
 */
 
+bool ledState = true;
+unsigned long previousMillis = 0;
+const unsigned long INTERVAL = 500; // 500 ms = 0.5 seconds
+
 int CheckButtonPress() { // FUNCTION to check if Palm Buttons have been pressed within X amount of time of each other
   long pressTimeDif = button2PressTime - button1PressTime; //on press
   long panelTimeDif = button4PressTime - button3PressTime; //on panel
@@ -35,6 +39,14 @@ void UpdateCounter() {
   }
   else {
     digitalWrite(COUNTER, LOW);
+  }
+}
+
+void FlashLightCurtainLight() {
+  if (millis() - previousMillis >= INTERVAL) {
+    previousMillis = millis(); // Save the last toggle time
+    ledState = !ledState;           // Toggle the LED state
+    digitalWrite(LIGHT_CURTAIN_ENABLED_LIGHT, ledState); // Set the LED
   }
 }
 

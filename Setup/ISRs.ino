@@ -66,6 +66,7 @@ void LightCurtainRoutine() {
   if (digitalRead(LIGHT_CURTAIN_ENABLE)) {
     //disengage the clutch
     CLUTCH.State(false);
+    FlashLightCurtainLight();
     // Serial.println("light curtain flagged, clutch disengaged");
   }
   //else, do nothing

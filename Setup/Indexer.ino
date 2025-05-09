@@ -2,6 +2,7 @@
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: INDEXER
 */
+bool newCycle = true;
 
 void UpdateIndexer() {
   /*  Update the position of the indexer based on:
@@ -15,13 +16,20 @@ void UpdateIndexer() {
   */
   if (digitalRead(INDEXER_MODE_ENABLE)) {
     //TODO: be aware of the stops it has been going one stop on start up if it was at TDC_STOP
-    if (TDC_STOP && !cycleBegun) { //cycle indexer according to press position //TODO: update back to CLEAR_PATH
-      //if we are past 190 degrees ish
-      MoveDistance(1); //move one stop?
-      cycleBegun = true;
+    //TODO: ERROR!!!! When we move the indexer based on CLEAR_PATH, it prevents the TDC_STOP light from being detected in the continuous mode function??
+      
+    if (TDC_STOP && newCycle) {
+      //TODO: consider counting number of strokes when movedistance() is called and pulses are sent, instead of via the gemco!
+        Serial.println("Entering MoveDistance from CLEAR_PATH");
+        MoveDistance(1); //move one stop
+        numStrokes++;
+        Serial.print("Number of strokes: ");
+        Serial.println(numStrokes);
+        newCycle = false;
     }
-    else if (!TDC_STOP) {
-      cycleBegun = false;
+    else if (!TDC_STOP && !newCycle){
+      newCycle = true;
+      Serial.println("Resetting newCycle from CLEAR_PATH");
     }
     
     if (digitalRead(INDEXER_FW)) { //jog forward
@@ -73,6 +81,7 @@ bool MoveDistance(float numStops) {
     // Command the move of incremental distance
     SERVO.Move(pulses);
 
+    //TODO: come back to this and see if we can't implement a non blocking solution that would allow the jog and cycle options to work.
     // Add a short delay to allow HLFB to update
     delay(2);
 
