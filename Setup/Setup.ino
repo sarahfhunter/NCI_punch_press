@@ -51,6 +51,8 @@ The Modes:
 
 #include "ClearCore.h"  //include clearcore library
 #include <CcioPin.h>    //include clearcore library extender board
+
+//#define global constants (usually in CAPS)
 #define CcioPort ConnectorCOM1  //for extender board
 
 // Define baud rate
@@ -154,7 +156,6 @@ bool enabledViaIndexer = false;
 bool cycleBegun = false;
 bool enableSS = true;
 int numStrokes = 0; //number of times press has struck down (indexer gemco trigger)
-
 
 
 void setup() {
