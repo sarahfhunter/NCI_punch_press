@@ -8,15 +8,15 @@ Purpose: Setup
 Basic Info About the Press:
 - the punch press operates via a motor that runs a large flywheel.
 - When the clutch is engaged, it follows a cyclical path up and down.
-- the press has two air stops that need to be on in order to run the motor.
-- the press uses a GemCo CAM to keep track of where the press is throughout it's cycle
+- the press has two air stops that need to be on in order to run the motor, sometimes this is hardwired into the electrical circuit, sometimes it is checked via the clearcore.
+- the press uses a GemCo CAM to keep track of where the press is throughout its cycle
 
 The GemCo CAM states:
 * degrees specified below are approximations
 - there are four GemCo CAMs currently setup to detect the following positions (also shown in a diagram on the press):
   1. TDC (top dead center). When the press is between approx. -5°/+5° of the true top dead center, this GemCo CAM reads true
   2. Down stroke. When the press is between approx 5°-170° (just after TDC and just before bottom dead center)
-  3. Indexer trigger. This is from approximately 195°-280° (idk) and indicates that the indexer is clear to move one stop
+  3. Indexer GemCo. This is from approximately 195°-280° (idk) and indicates that the indexer is clear to move one stop
   4. TDC Stop. Triggered when the press is at approximately -15° from TDC. Clutch is disengaged at this point but momentum carries it to TDC ish
 
 The Safety Features:
@@ -45,7 +45,11 @@ The Modes:
   - Enable light curtains
       - this is enabled during Setup(), not possible to update once clearcore is up and running. Need to e-stop to change it
   - Enable use of a servo indexer
+      - When the indexer is enabled, it will move in sync with the press (cycling each time the press triggers the indexer gemco).
+      - the indexer can also be jogged forward and reverse even when the clutch for the press isn't engaged
+      - the indexer can also be cycled manually via button to move forward one stop.
   - Bumper stop enable
+      - TBD
 */
 
 
@@ -58,9 +62,10 @@ The Modes:
 // Define baud rate
 #define baudRate 9600
 #define TRIGGER_PULSE_TIME 25 // should this be 20?
-#define SERVO_PPR 6400.0 //the number of pulses per revolution for the servo (change here)!
+// the following values are used in the formula to calculate pulses sent to the servo motor. Update them here if needed.
+#define SERVO_PPR 6400.0 //the number of pulses per revolution for the servo
 #define GEAR_REDUCER 5 //5 to 1
-#define INDEXER_REDUCER 12 // 12 to 1 OR 6 to 1. Update if needed and it will update in the formula
+#define INDEXER_REDUCER 12 // 12 to 1 OR 6 to 1
 
 /*************************************** DEFINE PINS ********************************************/
 // MAIN BOARD
@@ -115,7 +120,7 @@ The Modes:
 #define MOTOR_OFF_LIGHT CCIOE1
 #define TDC_LIGHT CCIOE2
 #define DOWNSTROKE_LIGHT CCIOE3
-#define TDC_STOP_LIGHT CCIOE4 //rename from GEMCO_STOP_...
+#define TDC_STOP_LIGHT CCIOE4 
 #define SS_LIGHT CCIOE5
 #define ARM_CONTINUOUS_LIGHT CCIOE6
 #define LIGHT_CURTAIN_ENABLED_LIGHT CCIOE7
@@ -151,11 +156,10 @@ bool ssStartedTDC = false;
 bool motorOn = false; // bool for turning on motor
 bool continuousModeArmed = false;  // Tracks whether continuous mode is armed
 bool stopAtTop = false; // Tracks if the top stop button is pressed
-bool enabledViaIndexer = false;
+bool enabledViaIndexer = false; //tracks if continuous mode was entered via indexer (otherwise, entered via arm continuous button)
 
-bool cycleBegun = false;
-bool enableSS = true;
-int numStrokes = 0; //number of times press has struck down (indexer gemco trigger)
+bool enableSS = true; //this flag controls Single stroke mode from doing more than one cycle.
+int numStrokes = 0; //number of times press has struck down (indexer gemco trigger), used in continuous mode w/ indexer
 
 
 void setup() {
@@ -221,7 +225,7 @@ void setup() {
   SERVO.VelMax(INT32_MAX); // set max velocity
   SERVO.AccelMax(INT32_MAX); // setup max accel
   
-  // wait five seconds for a port to open before starting motor stuff?
+  // wait five seconds for a port to open before starting motor stuff
   uint32_t timeout = 5000;
   uint32_t startTime = millis();
   while(!Serial && millis() - startTime < timeout) {
@@ -237,7 +241,7 @@ void setup() {
   startTime = millis();
   while (SERVO.HlfbState() != MotorDriver::HLFB_ASSERTED) {
       if (millis() - startTime > timeout) {
-          Serial.println("Timeout waiting for HLFB. Motor may not be connected.");
+          Serial.println("Timeout waiting for HLFB. Motor may not be connected."); //if motor not connected, this will just timeout
           break;
       }
   }

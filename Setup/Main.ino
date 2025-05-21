@@ -16,13 +16,13 @@ void loop() {
   button4Pressed = PALM_BUTTON_4.State();
 
   /************************************ UPDATE LIGHTS & COUNTER ********************************************/
-  digitalWrite(TDC_LIGHT, TDC);                //update light based on GemCo1 (TDC) state
-  digitalWrite(DOWNSTROKE_LIGHT, DOWNSTROKE); //update light based on GemCo2 (downstroke) state
-  digitalWrite(TDC_STOP_LIGHT, TDC_STOP); //update light based on GemCo3 (TDC stop) state
-  digitalWrite(CLEAR_PATH_LIGHT, CLEAR_PATH); // GemCo for indexer being able to rotate safely
-  digitalWrite(LIGHT_CURTAIN_ENABLED_LIGHT, LIGHT_CURTAIN_ENABLE);
-  digitalWrite(INDEXER_MODE_ENABLE_LIGHT, digitalRead(INDEXER_MODE_ENABLE));
-  UpdateCounter();
+  digitalWrite(TDC_LIGHT, TDC);                //update light based on TDC GemCo state
+  digitalWrite(DOWNSTROKE_LIGHT, DOWNSTROKE); //update light based on downstroke GemCo state
+  digitalWrite(TDC_STOP_LIGHT, TDC_STOP); //update light based on TDC stop GemCo state
+  digitalWrite(CLEAR_PATH_LIGHT, CLEAR_PATH); //update light based on indexer GemCo for indexer being able to rotate safely
+  digitalWrite(LIGHT_CURTAIN_ENABLED_LIGHT, LIGHT_CURTAIN_ENABLE); //update light based on whether light curtain is enabled or not
+  digitalWrite(INDEXER_MODE_ENABLE_LIGHT, digitalRead(INDEXER_MODE_ENABLE)); // update light based on whether indexer mode is enabled or not
+  UpdateCounter(); //update counter
 
   //TODO: add bumper stop
     // only takes place during continuous mode
@@ -35,7 +35,7 @@ void loop() {
     motorOn = true;
   }
   
-  //TODO: add a safety so you can't switch between FW and REV
+  //TODO: add a safety so you can't switch between FW and REV???
   // if (digitalRead(MOTOR_REV)) {
   //   //let the flywheel slow down, user will have to visually see when flywheel stops and can hit green button again.
   //   motorOn = false;
@@ -72,7 +72,9 @@ void loop() {
   }
 
   /**************************************** MAIN STATE MACHINE ******************************************/
-  if (motorOn) {    // if stop button has NOT been pressed and the air is on, then enter into the modes
+  //this switches between Inch, SS and Cont mode
+  if (motorOn) {   
+
     //Check which mode is selected
     if (digitalRead(SS_MODE)) {
       TurnOffCont(); //turn off other mode's flags/lights

@@ -1,6 +1,7 @@
 /*Updated on 05/09/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
-Purpose: INTERRUPT SERVICE ROUTINES
+Purpose: INTERRUPT SERVICE ROUTINES. These are entered instantaneously if the digital interrupt pin they are attached to is triggered. 
+         See setup() for which pins are established as interrupts.
 */
 
 void button1ISR() { //PALM_BUTTON_1 ISR
@@ -56,20 +57,17 @@ void button4ISR() { //PALM_BUTTON_2 ISR
 }
 
 // Interrupt Service Rountine for both stops
-void StopISR() { //MOTOR_OFF_BUTTON and MOTOR_OFF_BUTTON_2 ISR
+void StopISR() { 
+  // if any of the motor off buttons are pressed, we enter this function and turn off motorOn flag
   motorOn = false; //this flag then updates the motor state in loop() 
 }
 
 void LightCurtainRoutine() {
-  //light curtain was triggered
-  if (digitalRead(LIGHT_CURTAIN_ENABLE)) {
-    //disengage the clutch
-    CLUTCH.State(false);
-    FlashLightCurtainLight();
-    
-    //reset all flags after light curtain is done being triggered
-    TurnOffCont();
-    TurnOffSS();
-  }
-  //else, do nothing
+  //if light curtain was triggered, we enter this function
+  
+  CLUTCH.State(false); //disengage the clutch
+  
+  //reset all flags after light curtain is done being triggered, so we have to restart SS or Continuous mode if they were interrupted
+  TurnOffCont();
+  TurnOffSS();
 }
