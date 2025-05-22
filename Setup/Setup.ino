@@ -1,4 +1,4 @@
-/*Updated on 05/09/2025
+/*Updated on 05/22/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: Setup
 */
@@ -84,7 +84,7 @@ The Modes:
 // EXPANSION BOARD A (INPUTS)
 #define INDEXER_MODE_ENABLE CCIOA0
 #define LIGHT_CURTAIN_ENABLE digitalRead(CCIOA1)
-#define BUMPER_STOP_ENABLE CCIOA2
+#define BUMPER_STOP_ENABLE digitalRead(CCIOA2)
 #define INDEXER_2_POS digitalRead(CCIOA3)
 #define INDEXER_5_POS digitalRead(CCIOA4)
 #define INDEXER_8_POS digitalRead(CCIOA5)
@@ -114,6 +114,7 @@ The Modes:
 // EXPANSION BOARD D (EMPTY)
 #define CLEAR_PATH digitalRead(CCIOD0) // GemCo for indexer 
 #define PALM_BUTTONS_ON_PANEL !digitalRead(CCIOD1) //choose whether to use palm buttons on press or panel
+#define BUMPER_STOP_SWITCH digitalRead(CCIOD2) 
 
 // EXPANSION BOARD E (OUTPUTS)
 #define MOTOR_ON_LIGHT CCIOE0
@@ -129,6 +130,8 @@ The Modes:
 #define CLEAR_PATH_LIGHT CCIOF0
 #define COUNTER CCIOF1 // incremement counter
 #define INDEXER_MODE_ENABLE_LIGHT CCIOF2
+#define BUMPER_STOP_ENABLE_LIGHT CCIOF5
+#define BUMPER_STOP_STATUS_LIGHT CCIOF6
 
 /******************************INITIALIZE BOOLS + SOME FUNCTION PROTOTYPES*********************************/
 bool useButtonsOnPanel = true; //default is to use the palm buttons on the panel, not press

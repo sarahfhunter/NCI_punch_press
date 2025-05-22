@@ -1,4 +1,4 @@
-/*Updated on 05/09/2025
+/*Updated on 05/22/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: Extra functions
 */
@@ -15,6 +15,20 @@ int CheckButtonPress() { // FUNCTION to check if Palm Buttons have been pressed 
   }
   else {
     return 0; //if neither set of palm buttons pressed in proper timing, return false
+  }
+}
+
+bool CheckBumperStop() {
+  if (BUMPER_STOP_ENABLE) {
+    if (BUMPER_STOP_SWITCH) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  else {
+    return true;
   }
 }
 

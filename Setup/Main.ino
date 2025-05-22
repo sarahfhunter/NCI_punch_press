@@ -1,4 +1,4 @@
-/*Updated on 05/09/2025
+/*Updated on 05/22/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose:
 */
@@ -22,7 +22,10 @@ void loop() {
   digitalWrite(CLEAR_PATH_LIGHT, CLEAR_PATH); //update light based on indexer GemCo for indexer being able to rotate safely
   digitalWrite(LIGHT_CURTAIN_ENABLED_LIGHT, LIGHT_CURTAIN_ENABLE); //update light based on whether light curtain is enabled or not
   digitalWrite(INDEXER_MODE_ENABLE_LIGHT, digitalRead(INDEXER_MODE_ENABLE)); // update light based on whether indexer mode is enabled or not
+  digitalWrite(BUMPER_STOP_ENABLE_LIGHT, BUMPER_STOP_ENABLE);
+  digitalWrite(BUMPER_STOP_STATUS_LIGHT, BUMPER_STOP_SWITCH);
   UpdateCounter(); //update counter
+
 
   //TODO: add bumper stop
     // only takes place during continuous mode

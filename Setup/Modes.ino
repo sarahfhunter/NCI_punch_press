@@ -1,11 +1,11 @@
-/*Updated on 05/09/2025
+/*Updated on 05/22/2025
 Author: Sarah Hunter, Heidi Hunter and Steele Mason
 Purpose: INCH, SINGLE STROKE, AND CONTINUOUS MODE
 */
 
 // INCH/JOG CLUTCH CONTROL CYCLE
 void Perform_INCH () {
-    
+
   // If buttons were pressed within X amount of time of each other then engage Clutch
   if (CheckButtonPress() == 1) {
       CLUTCH.State(true);  //engage clutch
@@ -18,12 +18,13 @@ void Perform_INCH () {
 
 // SINGLE STROKE CLUTCH CONTROL CYCLE
 void Perform_SINGLE_STROKE() {
+  //TODO test this: don't allow the cycle to start again until the bumper stop switch is high
 
   if (digitalRead(MOTOR_FW)) { // only allow SS mode in FW, not reverse
   
     digitalWrite(SS_LIGHT, true); //indicate that SS mode is selected
 
-    if (!enableSS && !CheckButtonPress()) { //reset enableSS if the palm buttons have been released
+    if (!enableSS && !CheckButtonPress() && CheckBumperStop()) { //reset enableSS if the palm buttons have been released, and checks for bumper stop if enabled
       enableSS = true;
     }
 
@@ -54,7 +55,6 @@ void Perform_SINGLE_STROKE() {
 void Perform_CONTINUOUS() {
 
     if (digitalRead(MOTOR_FW)) { // only allow Cont mode if motor is FW, not REV
-
         //enable continuous mode enable based on indexer mode
         if (digitalRead(INDEXER_MODE_ENABLE)) { //check to see if indexer mode is enabled
           // enable continuous mode because indexer mode is selected
@@ -78,7 +78,13 @@ void Perform_CONTINUOUS() {
         if (TDC && continuousModeArmed && CheckButtonPress()) {  
             CLUTCH.State(true); // run
         }
-        
+
+        // if the bumper stop is enabled, and if the press is at DOWNSTROKE and if bumper switch is NOT pressed, then disengage the clutch
+        if (BUMPER_STOP_ENABLE && DOWNSTROKE && !BUMPER_STOP_SWITCH) {
+          CLUTCH.State(false);
+          TurnOffCont(); // reset continuous flags 
+        }
+
         // Check for the Top Stop Button press or maxing out cycles (if indexer mode enabled)
         if (digitalRead(TOP_STOP_BUTTON) || (numStrokes >= GetTotalStops())) {
             stopAtTop = true; //set this flag to true, will cause it to stop when it reaches TDC_Stop
