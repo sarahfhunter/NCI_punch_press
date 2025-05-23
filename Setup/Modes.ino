@@ -24,6 +24,12 @@ void Perform_SINGLE_STROKE() {
   
     digitalWrite(SS_LIGHT, true); //indicate that SS mode is selected
 
+    // if we are at TDC and the bumper stop is NOT high, then kick out of SS mode and restart
+    if (TDC && !CheckBumperStop()) {
+      CLUTCH.State(false);
+      TurnOffSS(); //turn off SS mode
+    }
+
     if (!enableSS && !CheckButtonPress() && CheckBumperStop()) { //reset enableSS if the palm buttons have been released, and checks for bumper stop if enabled
       enableSS = true;
     }
@@ -80,7 +86,7 @@ void Perform_CONTINUOUS() {
         }
 
         // if the bumper stop is enabled, and if the press is at DOWNSTROKE and if bumper switch is NOT pressed, then disengage the clutch
-        if (BUMPER_STOP_ENABLE && DOWNSTROKE && !BUMPER_STOP_SWITCH) {
+        if (DOWNSTROKE && !CheckBumperStop()) { //TODO: not sure if DOWNSTROKE is the right check here, might be checking as early as +10 degrees
           CLUTCH.State(false);
           TurnOffCont(); // reset continuous flags 
         }
